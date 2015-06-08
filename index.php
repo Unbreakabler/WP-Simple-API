@@ -5,8 +5,10 @@ require 'Slim/Slim/Slim.php';
 
 $app = new \Slim\Slim();
 
-$app->get('/hello/:name', function ($name) {
-    echo "Hello, $name";
+$app->get('/hello/:name', function ($name) use ($app){
+  $response = $app->response();
+  $response->header('Access-Control-Allow-Origin', '*');
+  $response->write(json_encode("Hello, $name"));
 });
 
 $app->run();
