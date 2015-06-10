@@ -6,16 +6,17 @@ require 'Slim/Slim/Slim.php';
 
 //Grabbing the DB credentials to acces the necessary SQL tables
 require 'config/config.php';
+var_dump($categories);
 
-//Connect to database
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-$result = $conn->query("SELECT name FROM ez_terms ORDER BY id ASC");
-var_dump($conn);
-
-if ($conn->connect_error) {
-    die("Connection failled:" . $conn->connect_error);
+//Creates a new mysqli connection to database
+function dbConnect($host = DB_HOST, $user = DB_USER, $password = DB_PASSWORD, $dbname = DB_NAME) {
+    $mysqli = new mysqli($host, $user, $password, $dbname);
+    if ($mysqli->connect_error) {
+        die("Connection failled:" . $mysqli->connect_error);
+    } else {
+        return $mysqli;
+    }
 }
-echo "connected successfully!";
 
 $app = new \Slim\Slim();
 
@@ -37,6 +38,47 @@ $app->get('/hello/:name', function ($name) use ($app){
 *   ?
 */
 
+
+
+
+// OLD CODE BELOW HERE
+/** CATEGORY FUNCTIONS **/
+/*
+// Returns an unfiltered list of all of the categories present on the wordpress site
+function getFullCategoryList($mysqli, $table_prefix) {
+    if ($result = $mysqli->query("SELECT term_id,slug,name FROM " . $table_prefix . "terms")) {
+        while($row = $result->fetch_array(MYSQL_ASSOC)) {
+            $resultArray[] = ($row);
+        }
+    } else {
+        return 'categories failed';
+    }
+    return $resultArray;
+}
+
+//Returns a list of term_id for categories that have more posts then the minimum required in the config file
+function getCommonCategories($mysqli, $table_prefix, $postCount) {
+    $count = 0;
+    if ($result = $mysqli->query("SELECT term_id FROM " . $table_prefix . "term_taxonomy WHERE count > " . $postCount)) {
+        while($row = $result->fetch_array(MYSQL_ASSOC)) {
+            $resultArray[] = ($row['term_id']);
+        }
+    }
+    return $resultArray;
+}
+
+//Trims the full categoryList down to only those categories with postcount > minimum required
+function trimCategories($catList, $termIds) {
+    foreach ($termIds as $id) {
+        foreach ($catList as $item) {
+            if ($item['term_id'] == $id) {
+                $resultArray[] = $item;
+            }
+        }
+    }
+    return $resultArray;
+}
+
 $app->group('/articles', function() use ($app) {
 
     $app->get('/', function() use ($app) {
@@ -47,19 +89,23 @@ $app->group('/articles', function() use ($app) {
 
     $app->group('/categories', function() use ($app) {
 
-        $app->get('/', function() use ($app) {
-            //return list of categories
-            $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD);
-            $result = $conn->query("SELECT name FROM ez_terms ORDER BY id ASC");
-            echo $result;
+        $app->get('/', function() use ($app) {  //return list of categories
 
+            $mysqli = dbConnect();
+            $fullCategoryList = getFullCategoryList($mysqli, TABLE_PREFIX);
+            $termidsToKeep = getCommonCategories($mysqli, TABLE_PREFIX, CATEGORY_POST_COUNT);
+            $categoryList = trimCategories($fullCategoryList, $termidsToKeep);
 
+            // CREATE RESPONSE
             $response = $app->response();
+            // Allow access to everyone for initial testing purposes
+            // TODO: Implemention authentication protocol so the API can only be accessed by the app
             $response->header('Access-Control-Allow-Origin', '*');
-            $response->write(json_encode("$result"));
+            $response->write(json_encode($categoryList));
         });
 
         $app->get('/:category', function($category) use ($app) {
+            //TODO: Implement a CategoryName => term_id relationship server side.
             //return recent articles for specific category
             $response = $app->response();
             $response->header('Access-Control-Allow-Origin', '*');
@@ -76,7 +122,7 @@ $app->group('/articles', function() use ($app) {
 
     //$app->get()
 });
-
+*/
 
 
 $app->run();
