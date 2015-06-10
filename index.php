@@ -14,6 +14,7 @@ function dbConnect($host = DB_HOST, $user = DB_USER, $password = DB_PASSWORD, $d
     if ($mysqli->connect_error) {
         die("Connection failled:" . $mysqli->connect_error);
     } else {
+        $mysqli->set_charset("utf8");
         return $mysqli;
     }
 }
@@ -36,19 +37,48 @@ $app->get('/hello/:name', function ($name) use ($app){
 *   ? Get specific article by name from /articles/:name
 *   ? Get list of articles on a certain date from /articles/:date(D-M-Y)
 */
+//TODO: Close all mysqli objects
 
-function getRecentPostsByCategory($table_prefix, $term_id = 2, $count = 5, $index = 0) {
-    $mysqli = dbConnect();
+function jsonErrorTesting() {
+    switch (json_last_error()) {
+        case JSON_ERROR_NONE:
+            echo ' - No errors';
+        break;
+        case JSON_ERROR_DEPTH:
+            echo ' - Maximum stack depth exceeded';
+        break;
+        case JSON_ERROR_STATE_MISMATCH:
+            echo ' - Underflow or the modes mismatch';
+        break;
+        case JSON_ERROR_CTRL_CHAR:
+            echo ' - Unexpected control character found';
+        break;
+        case JSON_ERROR_SYNTAX:
+            echo ' - Syntax error, malformed JSON';
+        break;
+        case JSON_ERROR_UTF8:
+            echo ' - Malformed UTF-8 characters, possibly incorrectly encoded';
+        break;
+        default:
+            echo ' - Unknown error';
+        break;
+    }
+}
 
-    //TODO: Remove else, set indexDate default to current date - format: '2015-01-23 14:33:02'
-    //TODO: Close all mysqli objects
-
+function setIndexDate($index, $mysqli) {
     $indexDate = new DateTime();
     $indexDate = $indexDate->format( 'Y-m-d H:i:s');
 
     if ($index !== 0) {
         $indexDate = findIndexDate($index, $mysqli);
     }
+    return $indexDate;
+}
+
+function getRecentPostsByCategory($table_prefix, $term_id = 2, $count = 5, $index = 0) {
+    $mysqli = dbConnect();
+
+    $indexDate = setIndexDate($index, $mysqli);
 
     $sql = "SELECT SQL_CALC_FOUND_ROWS ez_posts.ID
             FROM ez_posts INNER JOIN ez_term_relationships ON
@@ -62,7 +92,6 @@ function getRecentPostsByCategory($table_prefix, $term_id = 2, $count = 5, $inde
             GROUP BY ez_posts.ID ORDER BY ez_posts.post_date
             DESC LIMIT 0, $count";
 
-
     if ($result = $mysqli->query($sql)) {
         while($row = $result->fetch_object()) {
             $resultArray[] = $row;
@@ -71,19 +100,72 @@ function getRecentPostsByCategory($table_prefix, $term_id = 2, $count = 5, $inde
         return 'Select Statement Failed';
     }
 
+    $mysqli->close();
     return $resultArray;
 }
 
 function findIndexDate($index, $mysqli) {
 
     $sql = "SELECT ez_posts.post_date FROM ez_posts WHERE ez_posts.ID = $index";
+    $resultField = 'ID NOT FOUND';
 
     if ($result = $mysqli->query($sql)) {
         while($row = $result->fetch_object()) {
             $resultField = $row->post_date;
         }
     }
-    return($resultField);
+    return $resultField ;
+}
+
+function getPostListByID($table_prefix, $ids) {
+    $mysqli = dbConnect();
+    $idString = '';
+
+    foreach ($ids as $id) {
+        $idString .= $id->ID . ',';
+    }
+
+    $idString = rtrim($idString, ",");
+    $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status FROM ".$table_prefix."posts WHERE `ID` IN ($idString)";
+
+    if ($result = $mysqli->query($sql)) {
+        while ($row = $result->fetch_object()) {
+            $resultField[] = $row;
+        }
+    }
+    return $resultField;
+}
+
+function getPostMetaData($table_prefix, $posts) {
+    $mysqli = dbConnect();
+
+
+    foreach ($posts as $post) {
+        //Appends the header image to each post object
+        $sql = "SELECT meta_value FROM ".$table_prefix."postmeta WHERE post_id = $post->ID AND meta_key = '_thumbnail_id'";
+        if ($result = $mysqli->query($sql)) {
+            while ($row = $result->fetch_object()) {
+                $sql = "SELECT * FROM `ez_posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
+                if ($result = $mysqli->query($sql)) {
+                    while ($row = $result->fetch_object()) {
+                        $post->thumbnailURI = $row->guid;
+                    }
+                }
+
+            }
+        }
+        //Appends the real name of the author to each post object
+        $sql = "SELECT `display_name`FROM `ez_users` WHERE `ID` = $post->post_author";
+        if ($result = $mysqli->query($sql)) {
+            $obj = $result->fetch_object();
+            $post->author_name = $obj->display_name;
+        }
+    }
+
+
+
+    var_dump($posts);
+    //var_dump($thumbnailID);
 }
 
 function sendJSONResponse($app, $responseBody) {
@@ -92,24 +174,32 @@ function sendJSONResponse($app, $responseBody) {
     // Allow access to everyone for initial testing purposes
     // TODO: Implemention authentication protocol so the API can only be accessed by the app
     $response->header('Access-Control-Allow-Origin', '*');
-    $response->write(json_encode($responseBody));
+    //jsonErrorTesting();
+
+    $response->write(json_encode($responseBody, JSON_HEX_QUOT | JSON_HEX_TAG));
 }
 
 $app->group('/category', function () use ($app) {
 
     $app->get('/:term_id', function($term_id) use ($app) {
-        $resultArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id);
+        $postArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id);
+        $resultArray = getPostListByID($postArray);
         sendJSONResponse($app, $resultArray);
     });
 
     $app->get ('/:term_id/:count', function($term_id,$count) use ($app) {
-        $resultArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id, $count);
+        $postArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id, $count);
+        $resultArray = getPostListByID($postArray);
         sendJSONResponse($app, $resultArray);
     });
 
     $app->get ('/:term_id/:count/:index', function($term_id, $count, $index) use ($app) {
-        $resultArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id, $count, $index);
-        sendJSONResponse($app, $resultArray);
+        $postArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id, $count, $index);
+        $postListArray = getPostListByID(TABLE_PREFIX, $postArray);
+        $resultArray = getPostMetaData(TABLE_PREFIX, $postListArray);
+        //var_dump($postArray);
+        //var_dump($resultArray);
+        //sendJSONResponse($app, $postListArray);
     });
 });
 
