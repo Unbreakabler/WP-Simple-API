@@ -17,4 +17,6 @@ define('CATEGORY_POST_COUNT', 500);
 
 define('TABLE_PREFIX', 'ez_');
 
+define('DEFAULT_POST_IMAGE', 'http://www.kamloopsthisweek.com/wp-content/uploads/2014/09/NEWS-HEADER-2.jpg');
+
 ?>

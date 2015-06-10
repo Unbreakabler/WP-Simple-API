@@ -142,16 +142,23 @@ function getPostMetaData($table_prefix, $posts) {
 
     foreach ($posts as $post) {
         //Appends the header image to each post object
-        $sql = "SELECT meta_value FROM ".$table_prefix."postmeta WHERE post_id = $post->ID AND meta_key = '_thumbnail_id'";
+        $sql = "SELECT * FROM ".$table_prefix."postmeta WHERE post_id = $post->ID AND meta_key IN ('tie_views','_thumbnail_id')";
+
+        //var_dump($sql);
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
-                $sql = "SELECT * FROM `ez_posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
-                if ($result = $mysqli->query($sql)) {
-                    while ($row = $result->fetch_object()) {
-                        $post->thumbnailURI = $row->guid;
+                if ($row->meta_key == '_thumbnail_id') {
+                    //$post->thumbnailID = $row->meta_value;
+                    $sql = "SELECT * FROM `ez_posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
+                    if ($newresult = $mysqli->query($sql)) {
+                        while ($row = $newresult->fetch_object()) {
+                            $post->thumbnailURI = $row->guid;
+                        }
                     }
+                } else {
+                    //var_dump($row->meta_value);
+                    $post->views = $row->meta_value;
                 }
-
             }
         }
         //Appends the real name of the author to each post object
@@ -160,11 +167,14 @@ function getPostMetaData($table_prefix, $posts) {
             $obj = $result->fetch_object();
             $post->author_name = $obj->display_name;
         }
+
+        if (!isset($post->thumbnailURI)) {
+            $post->thumbnailURI = DEFAULT_POST_IMAGE;
+        }
     }
 
-
-
-    var_dump($posts);
+    //var_dump($posts);
+    return $posts;
     //var_dump($thumbnailID);
 }
 
@@ -199,101 +209,9 @@ $app->group('/category', function () use ($app) {
         $resultArray = getPostMetaData(TABLE_PREFIX, $postListArray);
         //var_dump($postArray);
         //var_dump($resultArray);
-        //sendJSONResponse($app, $postListArray);
+        sendJSONResponse($app, $resultArray);
     });
 });
-
-$app->get('/category/:term_id', function ($term_id) use ($app) {
-
-
-
-
-});
-
-
-// OLD CODE BELOW HERE
-/** CATEGORY FUNCTIONS **/
-/*
-// Returns an unfiltered list of all of the categories present on the wordpress site
-function getFullCategoryList($mysqli, $table_prefix) {
-    if ($result = $mysqli->query("SELECT term_id,slug,name FROM " . $table_prefix . "terms")) {
-        while($row = $result->fetch_array(MYSQL_ASSOC)) {
-            $resultArray[] = ($row);
-        }
-    } else {
-        return 'categories failed';
-    }
-    return $resultArray;
-}
-
-//Returns a list of term_id for categories that have more posts then the minimum required in the config file
-function getCommonCategories($mysqli, $table_prefix, $postCount) {
-    $count = 0;
-    if ($result = $mysqli->query("SELECT term_id FROM " . $table_prefix . "term_taxonomy WHERE count > " . $postCount)) {
-        while($row = $result->fetch_array(MYSQL_ASSOC)) {
-            $resultArray[] = ($row['term_id']);
-        }
-    }
-    return $resultArray;
-}
-
-//Trims the full categoryList down to only those categories with postcount > minimum required
-function trimCategories($catList, $termIds) {
-    foreach ($termIds as $id) {
-        foreach ($catList as $item) {
-            if ($item['term_id'] == $id) {
-                $resultArray[] = $item;
-            }
-        }
-    }
-    return $resultArray;
-}
-
-$app->group('/articles', function() use ($app) {
-
-    $app->get('/', function() use ($app) {
-        $response = $app->response();
-        $response->header('Access-Control-Allow-Origin', '*');
-        $response->write(json_encode("list"));
-    });
-
-    $app->group('/categories', function() use ($app) {
-
-        $app->get('/', function() use ($app) {  //return list of categories
-
-            $mysqli = dbConnect();
-            $fullCategoryList = getFullCategoryList($mysqli, TABLE_PREFIX);
-            $termidsToKeep = getCommonCategories($mysqli, TABLE_PREFIX, CATEGORY_POST_COUNT);
-            $categoryList = trimCategories($fullCategoryList, $termidsToKeep);
-
-            // CREATE RESPONSE
-            $response = $app->response();
-            // Allow access to everyone for initial testing purposes
-            // TODO: Implemention authentication protocol so the API can only be accessed by the app
-            $response->header('Access-Control-Allow-Origin', '*');
-            $response->write(json_encode($categoryList));
-        });
-
-        $app->get('/:category', function($category) use ($app) {
-            //TODO: Implement a CategoryName => term_id relationship server side.
-            //return recent articles for specific category
-            $response = $app->response();
-            $response->header('Access-Control-Allow-Origin', '*');
-            $response->write(json_encode("list of articles in category: $category"));
-        });
-
-    });
-
-    $app->get('/:id', function($id) use ($app) {
-        $response = $app->response();
-        $response->header('Access-Control-Allow-Origin', '*');
-        $response->write(json_encode("specific article by id $id"));
-    });
-
-    //$app->get()
-});
-*/
-
 
 $app->run();
 
