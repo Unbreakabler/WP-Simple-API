@@ -38,6 +38,7 @@ $app->get('/hello/:name', function ($name) use ($app){
 *   ? Get list of articles on a certain date from /articles/:date(D-M-Y)
 */
 //TODO: Close all mysqli objects
+//TODO: Create a class for all of the New Article API functions, refactor them to their own file.
 
 function jsonErrorTesting() {
     switch (json_last_error()) {
@@ -133,6 +134,7 @@ function getPostListByID($table_prefix, $ids) {
             $resultField[] = $row;
         }
     }
+    $mysqli->close();
     return $resultField;
 }
 
@@ -174,16 +176,17 @@ function getPostMetaData($table_prefix, $posts) {
     }
 
     //var_dump($posts);
+    $mysqli->close();
     return $posts;
     //var_dump($thumbnailID);
 }
 
 function sendJSONResponse($app, $responseBody) {
-    // CREATE RESPONSE
     $response = $app->response();
     // Allow access to everyone for initial testing purposes
     // TODO: Implemention authentication protocol so the API can only be accessed by the app
     $response->header('Access-Control-Allow-Origin', '*');
+
     //jsonErrorTesting();
 
     $response->write(json_encode($responseBody, JSON_HEX_QUOT | JSON_HEX_TAG));
@@ -193,13 +196,15 @@ $app->group('/category', function () use ($app) {
 
     $app->get('/:term_id', function($term_id) use ($app) {
         $postArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id);
-        $resultArray = getPostListByID($postArray);
+        $postListArray = getPostListByID(TABLE_PREFIX, $postArray);
+        $resultArray = getPostMetaData(TABLE_PREFIX, $postListArray);
         sendJSONResponse($app, $resultArray);
     });
 
     $app->get ('/:term_id/:count', function($term_id,$count) use ($app) {
         $postArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id, $count);
-        $resultArray = getPostListByID($postArray);
+        $postListArray = getPostListByID(TABLE_PREFIX, $postArray);
+        $resultArray = getPostMetaData(TABLE_PREFIX, $postListArray);
         sendJSONResponse($app, $resultArray);
     });
 
@@ -207,8 +212,6 @@ $app->group('/category', function () use ($app) {
         $postArray = getRecentPostsByCategory(TABLE_PREFIX, $term_id, $count, $index);
         $postListArray = getPostListByID(TABLE_PREFIX, $postArray);
         $resultArray = getPostMetaData(TABLE_PREFIX, $postListArray);
-        //var_dump($postArray);
-        //var_dump($resultArray);
         sendJSONResponse($app, $resultArray);
     });
 });
