@@ -15,7 +15,7 @@
 
 class PostAPI {
 
-    public function setIndexDate($index, $mysqli) {
+    public function setIndexDate($table_prefix, $index, $mysqli) {
         $indexDate = new DateTime();
         $indexDate = $indexDate->format( 'Y-m-d H:i:s');
 
@@ -28,9 +28,11 @@ class PostAPI {
     public function getRecentPostsByCategory($table_prefix, $term_id = 2, $count = 5, $index = 0) {
         $mysqli = dbConnect();
 
-        $indexDate = $this->setIndexDate($index, $mysqli);
+        $indexDate = $this->setIndexDate($table_prefix, $index, $mysqli);
 
-        $sql = "SELECT SQL_CALC_FOUND_ROWS ".$table_prefix."posts.ID
+        //TODO: Look up $term_taxonomy_id in term_taxonomy table
+
+        $sql = "SELECT ".$table_prefix."posts.ID
                 FROM ".$table_prefix."posts INNER JOIN ".$table_prefix."term_relationships ON
                 (".$table_prefix."posts.ID = ".$table_prefix."term_relationships.object_id) WHERE 1=1
                 AND ( ".$table_prefix."term_relationships.term_taxonomy_id IN ($term_id) )
@@ -76,8 +78,7 @@ class PostAPI {
         }
 
         $idString = rtrim($idString, ",");
-        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status FROM ".$table_prefix."posts WHERE `ID` IN ($idString)";
-
+        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status FROM ".$table_prefix."posts WHERE `ID` IN ($idString) ORDER BY ".$table_prefix."posts.post_date";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
                 $resultField[] = $row;
