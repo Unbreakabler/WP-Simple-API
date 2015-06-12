@@ -51,8 +51,21 @@ $app->group('/category', function () use ($app, $PostHandler, $RequestHandler) {
 
 $app->group('/post', function() use ($app, $PostHandler, $RequestHandler) {
 
-    $app->get('/:post_id', function($post_id) use ($app, $PostHandler, $RequestHandler) {
+    $app->get('/:term_id/:post_id', function($term_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
         $data = $PostHandler->getPostByID(TABLE_PREFIX, $post_id);
+        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+        $RequestHandler->sendJSONResponse($app, $data);
+    });
+
+    $app->get('/:term_id/:post_id/prev', function($term_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
+        $data = $PostHandler->getPreviousPostByID(TABLE_PREFIX, $post_id, $term_id);
+        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+        $RequestHandler->sendJSONResponse($app, $data);
+    });
+
+    $app->get('/:term_id/:post_id/next', function($term_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
+        $data = $PostHandler->getNextPostByID(TABLE_PREFIX, $post_id, $term_id);
+        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 

@@ -9,41 +9,18 @@
 *   ? Get specific article by name from /articles/:name
 *   ? Get list of articles on a certain date from /articles/:date(D-M-Y)
 */
-//TODO: Create a class for all of the New Article API functions, refactor them to their own file.
-class PostAPI {
 
-    private function jsonErrorTesting() {
-        switch (json_last_error()) {
-            case JSON_ERROR_NONE:
-                echo ' - No errors';
-            break;
-            case JSON_ERROR_DEPTH:
-                echo ' - Maximum stack depth exceeded';
-            break;
-            case JSON_ERROR_STATE_MISMATCH:
-                echo ' - Underflow or the modes mismatch';
-            break;
-            case JSON_ERROR_CTRL_CHAR:
-                echo ' - Unexpected control character found';
-            break;
-            case JSON_ERROR_SYNTAX:
-                echo ' - Syntax error, malformed JSON';
-            break;
-            case JSON_ERROR_UTF8:
-                echo ' - Malformed UTF-8 characters, possibly incorrectly encoded';
-            break;
-            default:
-                echo ' - Unknown error';
-            break;
-        }
-    }
+//TODO: Define the names for metadata values in the config file ex (tie_views is most likely not the name for views in every wordpress db)
+//TODO: Define update funciton to increment the view count
+
+class PostAPI {
 
     public function setIndexDate($index, $mysqli) {
         $indexDate = new DateTime();
         $indexDate = $indexDate->format( 'Y-m-d H:i:s');
 
         if ($index !== 0) {
-            $indexDate = $this->findIndexDate($index, $mysqli);
+            $indexDate = $this->findIndexDate($table_prefix, $index, $mysqli);
         }
         return $indexDate;
     }
@@ -53,16 +30,16 @@ class PostAPI {
 
         $indexDate = $this->setIndexDate($index, $mysqli);
 
-        $sql = "SELECT SQL_CALC_FOUND_ROWS ez_posts.ID
-                FROM ez_posts INNER JOIN ez_term_relationships ON
-                (ez_posts.ID = ez_term_relationships.object_id) WHERE 1=1
-                AND ( ez_term_relationships.term_taxonomy_id IN ($term_id) )
-                AND ez_posts.post_type = 'post'
-                AND (ez_posts.post_status = 'publish'
-                OR ez_posts.post_status = 'expired'
-                OR ez_posts.post_status = 'private')
-                AND ez_posts.post_date < '$indexDate'
-                GROUP BY ez_posts.ID ORDER BY ez_posts.post_date
+        $sql = "SELECT SQL_CALC_FOUND_ROWS ".$table_prefix."posts.ID
+                FROM ".$table_prefix."posts INNER JOIN ".$table_prefix."term_relationships ON
+                (".$table_prefix."posts.ID = ".$table_prefix."term_relationships.object_id) WHERE 1=1
+                AND ( ".$table_prefix."term_relationships.term_taxonomy_id IN ($term_id) )
+                AND ".$table_prefix."posts.post_type = 'post'
+                AND (".$table_prefix."posts.post_status = 'publish'
+                OR ".$table_prefix."posts.post_status = 'expired'
+                OR ".$table_prefix."posts.post_status = 'private')
+                AND ".$table_prefix."posts.post_date < '$indexDate'
+                GROUP BY ".$table_prefix."posts.ID ORDER BY ".$table_prefix."posts.post_date
                 DESC LIMIT 0, $count";
 
         if ($result = $mysqli->query($sql)) {
@@ -77,9 +54,9 @@ class PostAPI {
         return $resultArray;
     }
 
-    private function findIndexDate($index, $mysqli) {
+    private function findIndexDate($table_prefix, $index, $mysqli) {
 
-        $sql = "SELECT ez_posts.post_date FROM ez_posts WHERE ez_posts.ID = $index";
+        $sql = "SELECT ".$table_prefix."posts.post_date FROM ".$table_prefix."posts WHERE ".$table_prefix."posts.ID = $index";
         $resultField = 'ID NOT FOUND';
 
         if ($result = $mysqli->query($sql)) {
@@ -110,9 +87,73 @@ class PostAPI {
         return $resultField;
     }
 
-    public function getPostMetaData($table_prefix, $posts) {
+    public function getPostByID($table_prefix, $post_id) {
         $mysqli = dbConnect();
 
+        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status FROM ".$table_prefix."posts WHERE `ID` = ($post_id)";
+        if ($result = $mysqli->query($sql)) {
+            while ($row = $result->fetch_object()) {
+                $finalResult[] = $row;
+            }
+        }
+        $mysqli->close();
+        return $finalResult;
+    }
+
+    public function getNextPostByID($table_prefix, $post_id, $term_id) {
+        $mysqli = dbConnect();
+
+        $indexDate = $this->findIndexDate($table_prefix, $post_id, $mysqli);
+
+        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status
+                FROM ".$table_prefix."posts INNER JOIN ".$table_prefix."term_relationships ON
+                (".$table_prefix."posts.ID = ".$table_prefix."term_relationships.object_id) WHERE 1=1
+                AND ( ".$table_prefix."term_relationships.term_taxonomy_id IN ($term_id) )
+                AND ".$table_prefix."posts.post_type = 'post'
+                AND (".$table_prefix."posts.post_status = 'publish'
+                OR ".$table_prefix."posts.post_status = 'expired'
+                OR ".$table_prefix."posts.post_status = 'private')
+                AND ".$table_prefix."posts.post_date > '$indexDate'
+                GROUP BY ".$table_prefix."posts.ID ORDER BY ".$table_prefix."posts.post_date
+                ASC LIMIT 0, 1";
+
+        if ($result = $mysqli->query($sql)) {
+            while ($row = $result->fetch_object()) {
+                $finalResult[] = $row;
+            }
+        }
+        $mysqli->close();
+        return $finalResult;
+    }
+
+    public function getPreviousPostByID($table_prefix, $post_id, $term_id) {
+        $mysqli = dbConnect();
+
+        $indexDate = $this->findIndexDate($table_prefix, $post_id, $mysqli);
+
+        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status
+                FROM ".$table_prefix."posts INNER JOIN ".$table_prefix."term_relationships ON
+                (".$table_prefix."posts.ID = ".$table_prefix."term_relationships.object_id) WHERE 1=1
+                AND ( ".$table_prefix."term_relationships.term_taxonomy_id IN ($term_id) )
+                AND ".$table_prefix."posts.post_type = 'post'
+                AND (".$table_prefix."posts.post_status = 'publish'
+                OR ".$table_prefix."posts.post_status = 'expired'
+                OR ".$table_prefix."posts.post_status = 'private')
+                AND ".$table_prefix."posts.post_date < '$indexDate'
+                GROUP BY ".$table_prefix."posts.ID ORDER BY ".$table_prefix."posts.post_date
+                DESC LIMIT 0, 1";
+
+        if ($result = $mysqli->query($sql)) {
+            while ($row = $result->fetch_object()) {
+                $finalResult[] = $row;
+            }
+        }
+        $mysqli->close();
+        return $finalResult;
+    }
+
+    public function getPostMetaData($table_prefix, $posts) {
+        $mysqli = dbConnect();
 
         foreach ($posts as $post) {
             //Appends the header image to each post object
@@ -123,7 +164,7 @@ class PostAPI {
                 while ($row = $result->fetch_object()) {
                     if ($row->meta_key == '_thumbnail_id') {
                         //$post->thumbnailID = $row->meta_value;
-                        $sql = "SELECT * FROM `ez_posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
+                        $sql = "SELECT * FROM `".$table_prefix."posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
                         if ($newresult = $mysqli->query($sql)) {
                             while ($row = $newresult->fetch_object()) {
                                 $post->thumbnailURI = $row->guid;
@@ -136,7 +177,7 @@ class PostAPI {
                 }
             }
             //Appends the real name of the author to each post object
-            $sql = "SELECT `display_name`FROM `ez_users` WHERE `ID` = $post->post_author";
+            $sql = "SELECT `display_name`FROM `".$table_prefix."users` WHERE `ID` = $post->post_author";
             if ($result = $mysqli->query($sql)) {
                 $obj = $result->fetch_object();
                 $post->author_name = $obj->display_name;
