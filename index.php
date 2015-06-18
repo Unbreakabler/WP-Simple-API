@@ -8,8 +8,10 @@ require 'Slim/Slim/Slim.php';
 require 'config/config.php';
 require 'classes/post-class.php';
 require 'classes/requestsender-class.php';
+require 'classes/comment-class.php';
 
 $PostHandler = new PostAPI();
+$CommentHandler = new CommentAPI();
 $RequestHandler = new requestSender();
 
 //Creates a new mysqli connection to database
@@ -27,22 +29,22 @@ $app = new \Slim\Slim();
 
 $app->group('/category', function () use ($app, $PostHandler, $RequestHandler) {
 
-    $app->get('/:term_id', function($term_id) use ($app, $PostHandler, $RequestHandler) {
-        $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $term_id);
+    $app->get('/:category_id', function($category_id) use ($app, $PostHandler, $RequestHandler) {
+        $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $category_id);
         $postListArray = $PostHandler->getPostListByID(TABLE_PREFIX, $postArray);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->get ('/:term_id/:count', function($term_id,$count) use ($app, $PostHandler, $RequestHandler) {
-        $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $term_id, $count);
+    $app->get ('/:category_id/:count', function($category_id,$count) use ($app, $PostHandler, $RequestHandler) {
+        $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $category_id, $count);
         $postListArray = $PostHandler->getPostListByID(TABLE_PREFIX, $postArray);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->get ('/:term_id/:count/:index', function($term_id, $count, $index) use ($app, $PostHandler, $RequestHandler) {
-        $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $term_id, $count, $index);
+    $app->get ('/:category_id/:count/:index', function($category_id, $count, $index) use ($app, $PostHandler, $RequestHandler) {
+        $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $category_id, $count, $index);
         $postListArray = $PostHandler->getPostListByID(TABLE_PREFIX, $postArray);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray);
         $RequestHandler->sendJSONResponse($app, $data);
@@ -51,21 +53,34 @@ $app->group('/category', function () use ($app, $PostHandler, $RequestHandler) {
 
 $app->group('/post', function() use ($app, $PostHandler, $RequestHandler) {
 
-    $app->get('/:term_id/:post_id', function($term_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
+    //TODO: Implement grabbing the post purely by ID, 'category_id' (Category) is only required for next/prev
+
+    $app->get('/:category_id/:post_id', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
         $data = $PostHandler->getPostByID(TABLE_PREFIX, $post_id);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->get('/:term_id/:post_id/prev', function($term_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
-        $data = $PostHandler->getPreviousPostByID(TABLE_PREFIX, $post_id, $term_id);
+
+    $app->get('/:category_id/:post_id/prev', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
+        $data = $PostHandler->getPreviousPostByID(TABLE_PREFIX, $post_id, $category_id);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->get('/:term_id/:post_id/next', function($term_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
-        $data = $PostHandler->getNextPostByID(TABLE_PREFIX, $post_id, $term_id);
+    $app->get('/:category_id/:post_id/next', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
+        $data = $PostHandler->getNextPostByID(TABLE_PREFIX, $post_id, $category_id);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+        $RequestHandler->sendJSONResponse($app, $data);
+    });
+
+});
+
+$app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
+
+    //Get all comments for current post_id
+    $app->get('/:post_id', function ($post_id) use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
+        $data = $CommentHandler->getCommentsByID(TABLE_PREFIX, $post_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 

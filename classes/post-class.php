@@ -101,7 +101,7 @@ class PostAPI {
         return $finalResult;
     }
 
-    public function getNextPostByID($table_prefix, $post_id, $term_id) {
+    public function getPreviousPostByID($table_prefix, $post_id, $term_id) {
         $mysqli = dbConnect();
 
         $indexDate = $this->findIndexDate($table_prefix, $post_id, $mysqli);
@@ -124,10 +124,14 @@ class PostAPI {
             }
         }
         $mysqli->close();
+        // if (!isset($finalResult)) {
+        //     $finalResult = array("error" => true, "MessageFormatter" => null);
+        // }
         return $finalResult;
     }
 
-    public function getPreviousPostByID($table_prefix, $post_id, $term_id) {
+    // TODO: If previous post doesn't exist return an error string instead of causing application Error
+    public function getNextPostByID($table_prefix, $post_id, $term_id) {
         $mysqli = dbConnect();
 
         $indexDate = $this->findIndexDate($table_prefix, $post_id, $mysqli);
@@ -150,7 +154,11 @@ class PostAPI {
             }
         }
         $mysqli->close();
+        // if (!$finalResult) {
+        //     $finalResult = 'no previous post';
+        // }
         return $finalResult;
+
     }
 
     public function getPostMetaData($table_prefix, $posts) {
