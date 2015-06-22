@@ -15,14 +15,13 @@
 
 class CommentAPI {
 
-
     //TODO: Reimplement this function to be comment depth agnostic
     // currently only deals with comments to a depth of 3
     private function buildCommentStructure($comments) {
         $count = count($comments);
         for ($i = 0; $i < $count; $i++) {
             if ($comments[$i]->comment_parent == '0') {
-                $newComments[] = ($comments[$i]);
+                $parentComments[] = ($comments[$i]);
                 unset($comments[$i]);
 
             }
@@ -31,8 +30,10 @@ class CommentAPI {
 
         $count = count($comments);
 
+        $finalComments = $this->commentNesting($comments, $parentComments);
+
         foreach ($comments as $comment) {
-            foreach ($newComments as $parent) {
+            foreach ($parentComments as $parent) {
                 if (isset($parent->child)) {
                     foreach ($parent->child as $child) {
                         if ($child->comment_ID == $comment->comment_parent) {
@@ -46,8 +47,19 @@ class CommentAPI {
             }
         }
 
-        var_dump($newComments);
-        return $newComments;
+        return $parentComments;
+    }
+
+    private function commentNesting($comments, $parentComments) {
+
+        foreach ($comments as $comment) {
+            foreach ($parentComments as $parent) {
+                ;
+            }
+
+        }
+
+        return $comments;
     }
 
     public function getCommentsByID($table_prefix, $post_id) {
@@ -57,14 +69,22 @@ class CommentAPI {
                 FROM `".$table_prefix."comments` WHERE `comment_post_ID` = $post_id AND `comment_approved` = 1";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
+
+                //Format date into a nicer format to display client side
+                $row->comment_date = date('F j, Y, g:i a', strtotime("$row->comment_date"));
                 $finalResult[] = $row;
             }
         }
         $mysqli->close();
 
-        $comments = $this->buildCommentStructure($finalResult);
+        if (isset($finalResult)) {
+            $comments = $this->buildCommentStructure($finalResult);
+            return $comments;
+        } else {
+            return 204;
+        }
 
-        //return $comments;
+
     }
 
 }
