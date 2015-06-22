@@ -166,11 +166,20 @@ class PostAPI {
 
         foreach ($posts as $post) {
             //Appends the header image to each post object
-            $sql = "SELECT * FROM ".$table_prefix."postmeta WHERE post_id = $post->ID AND meta_key IN ('tie_views','_thumbnail_id')";
+            $sql = "UPDATE ".$table_prefix."postmeta
+            SET meta_value = meta_value + 1
+            WHERE post_id = $post->ID
+            AND meta_key IN ('".VIEW_METAKEY."')";
+            $mysqli->query($sql);
+
+            $sql = "SELECT * FROM ".$table_prefix."postmeta
+                    WHERE post_id = $post->ID
+                    AND meta_key IN ('".VIEW_METAKEY."','_thumbnail_id')";
 
             //var_dump($sql);
             if ($result = $mysqli->query($sql)) {
                 while ($row = $result->fetch_object()) {
+                    //var_dump($row);
                     if ($row->meta_key == '_thumbnail_id') {
                         //$post->thumbnailID = $row->meta_value;
                         $sql = "SELECT * FROM `".$table_prefix."posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
