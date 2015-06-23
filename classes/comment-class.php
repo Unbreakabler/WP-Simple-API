@@ -15,41 +15,70 @@
 
 class CommentAPI {
 
-    //TODO: Reimplement this function to be comment depth agnostic
-    // currently only deals with comments to a depth of 3
-    private function buildCommentStructure($comments) {
-        $count = count($comments);
-        for ($i = 0; $i < $count; $i++) {
-            if ($comments[$i]->comment_parent == '0') {
-                $parentComments[] = ($comments[$i]);
-                unset($comments[$i]);
+    private function getNestedChildren($comments, $parent) {
+        $output = [];
 
+        for ($i = 0; $i < count($comments); $i++) {
+            if($comments[$i]->comment_parent == $parent) {
+                //var_dump($comments[$i], $parent);
+                $children = $this->getNestedChildren($comments, $comments[$i]->comment_ID);
+
+                if (sizeof($children) > 0) {
+                    $comments[$i]->child = $children;
+                }
+                array_push($output, $comments[$i]);
             }
         }
-        $comments = array_values($comments);
-
-        $count = count($comments);
-
-        $finalComments = $this->commentNesting($comments, $parentComments);
-
-        foreach ($comments as $comment) {
-            foreach ($parentComments as $parent) {
-                if (isset($parent->child)) {
-                    foreach ($parent->child as $child) {
-                        if ($child->comment_ID == $comment->comment_parent) {
-                            $child->child[] = $comment;
-                        }
-                    }
-                }
-                if ($parent->comment_ID == $comment->comment_parent) {
-                    $parent->child[] = $comment;
-                }
-            }
-        }
-
-        return $parentComments;
+        //var_dump($output);
+        return $output;
     }
 
+
+    private function buildCommentStructure($comments) {
+        $newComments = [];
+        foreach ($comments as $comment) {
+            if ($comment->comment_parent == "0") {
+                $res = $this->getNestedChildren($comments, $comment->comment_ID);
+                if ($res) {
+                    $comment->child = $res;
+                }
+                array_push($newComments, $comment);
+            }
+        }
+        return $newComments;
+    }
+        // $count = count($comments);
+        // for ($i = 0; $i < $count; $i++) {
+        //     if ($comments[$i]->comment_parent == '0') {
+        //         $parentComments[] = ($comments[$i]);
+        //         unset($comments[$i]);
+        //
+        //     }
+        // }
+        // $comments = array_values($comments);
+        //
+        // $count = count($comments);
+        //
+        // $finalComments = $this->commentNesting($comments, $parentComments);
+        //
+        // foreach ($comments as $comment) {
+        //     foreach ($parentComments as $parent) {
+        //         if (isset($parent->child)) {
+        //             foreach ($parent->child as $child) {
+        //                 if ($child->comment_ID == $comment->comment_parent) {
+        //                     $child->child[] = $comment;
+        //                 }
+        //             }
+        //         }
+        //         if ($parent->comment_ID == $comment->comment_parent) {
+        //             $parent->child[] = $comment;
+        //         }
+        //     }
+        // }
+        //
+        // return $parentComments;
+
+    /*
     private function commentNesting($comments, $parentComments) {
 
         foreach ($comments as $comment) {
@@ -61,6 +90,7 @@ class CommentAPI {
 
         return $comments;
     }
+    */
 
     public function getCommentsByID($table_prefix, $post_id) {
         $mysqli = dbConnect();
@@ -78,7 +108,9 @@ class CommentAPI {
         $mysqli->close();
 
         if (isset($finalResult)) {
+            //var_dump($finalResult);
             $comments = $this->buildCommentStructure($finalResult);
+            //var_dump($comments);
             return $comments;
         } else {
             return 204;
