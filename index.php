@@ -9,7 +9,9 @@ require 'config/config.php';
 require 'classes/post-class.php';
 require 'classes/requestsender-class.php';
 require 'classes/comment-class.php';
+require 'classes/user-class.php';
 
+$UserHandler = new UserAPI();
 $PostHandler = new PostAPI();
 $CommentHandler = new CommentAPI();
 $RequestHandler = new requestSender();
@@ -84,6 +86,13 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
+});
+
+$app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
+    $app->get('/', function () use ($app, $UserHandler, $RequestHandler) {
+        $data = $UserHandler->getUserByToken(TABLE_PREFIX);
+        //$RequestHandler->sendJSONResponse($app, $data);
+    });
 });
 
 $app->run();

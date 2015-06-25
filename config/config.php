@@ -1,7 +1,7 @@
 <?php
 
 /** MySQL database name **/
-define('DB_NAME', 'kamloopsalex_wp');
+define('DB_NAME', 'kamloops_wp');
 
 /** MySQL database username */
 define('DB_USER', 'root');
