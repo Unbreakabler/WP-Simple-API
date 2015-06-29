@@ -10,9 +10,6 @@
 *   ? Get list of articles on a certain date from /articles/:date(D-M-Y)
 */
 
-//TODO: Define the names for metadata values in the config file ex (tie_views is most likely not the name for views in every wordpress db)
-//TODO: Define update funciton to increment the view count
-
 class PostAPI {
 
     public function setIndexDate($table_prefix, $index, $mysqli) {
@@ -78,7 +75,7 @@ class PostAPI {
         }
 
         $idString = rtrim($idString, ",");
-        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status FROM ".$table_prefix."posts WHERE `ID` IN ($idString) ORDER BY ".$table_prefix."posts.post_date";
+        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_count FROM ".$table_prefix."posts WHERE `ID` IN ($idString) ORDER BY ".$table_prefix."posts.post_date";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
                 $resultField[] = $row;
@@ -91,7 +88,7 @@ class PostAPI {
     public function getPostByID($table_prefix, $post_id) {
         $mysqli = dbConnect();
 
-        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status FROM ".$table_prefix."posts WHERE `ID` = ($post_id)";
+        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_count FROM ".$table_prefix."posts WHERE `ID` = ($post_id)";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
                 $finalResult[] = $row;
@@ -106,7 +103,7 @@ class PostAPI {
 
         $indexDate = $this->findIndexDate($table_prefix, $post_id, $mysqli);
 
-        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status
+        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_count
                 FROM ".$table_prefix."posts INNER JOIN ".$table_prefix."term_relationships ON
                 (".$table_prefix."posts.ID = ".$table_prefix."term_relationships.object_id) WHERE 1=1
                 AND ( ".$table_prefix."term_relationships.term_taxonomy_id IN ($term_id) )
@@ -136,7 +133,7 @@ class PostAPI {
 
         $indexDate = $this->findIndexDate($table_prefix, $post_id, $mysqli);
 
-        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_status
+        $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_count
                 FROM ".$table_prefix."posts INNER JOIN ".$table_prefix."term_relationships ON
                 (".$table_prefix."posts.ID = ".$table_prefix."term_relationships.object_id) WHERE 1=1
                 AND ( ".$table_prefix."term_relationships.term_taxonomy_id IN ($term_id) )

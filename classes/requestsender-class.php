@@ -37,7 +37,7 @@ class requestSender {
 
         // TODO: Implement better error handling
         // 204 No Content -> Currently using if there are no comments on current article
-        if ($responseBody == 204) {
+        if (isset($responseBody->error)) {
             return;
         } else {
             $response->write(json_encode($responseBody, JSON_HEX_QUOT | JSON_HEX_TAG));

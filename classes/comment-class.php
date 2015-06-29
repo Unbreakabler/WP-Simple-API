@@ -1,18 +1,5 @@
 <?php
 
-/*  News Article API
-*
-*   - Get a default list of recent articles from specific category -> /category/:term_id
-*   - Get list of articles from specific category -> /category/:term_id(categoryID)/:count(numOfPostsToReturn)/:index(lastPostID)
-*   - Get specific article (title/body/views/datePosted/author/images/gallery) -> /article/:id(postID)
-*   ? Get list of article categories from /articles/categories (May be usful in the future if we do subcategories)
-*   ? Get specific article by name from /articles/:name
-*   ? Get list of articles on a certain date from /articles/:date(D-M-Y)
-*/
-
-//TODO: Define the names for metadata values in the config file ex (tie_views is most likely not the name for views in every wordpress db)
-//TODO: Define update funciton to increment the view count
-
 class CommentAPI {
 
     private function getNestedChildren($comments, $parent) {
@@ -20,7 +7,6 @@ class CommentAPI {
 
         for ($i = 0; $i < count($comments); $i++) {
             if($comments[$i]->comment_parent == $parent) {
-                //var_dump($comments[$i], $parent);
                 $children = $this->getNestedChildren($comments, $comments[$i]->comment_ID);
 
                 if (sizeof($children) > 0) {
@@ -29,7 +15,6 @@ class CommentAPI {
                 array_push($output, $comments[$i]);
             }
         }
-        //var_dump($output);
         return $output;
     }
 
@@ -69,7 +54,10 @@ class CommentAPI {
             //var_dump($comments);
             return $comments;
         } else {
-            return 204;
+            if (!isset($res))
+                $res = new stdClass();
+            $res->error = 204;
+            return $res;
         }
 
 

@@ -91,7 +91,7 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
 $app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
     $app->get('/', function () use ($app, $UserHandler, $RequestHandler) {
         $data = $UserHandler->getUserByToken(TABLE_PREFIX);
-        //$RequestHandler->sendJSONResponse($app, $data);
+        $RequestHandler->sendJSONResponse($app, $data);
     });
 });
 
