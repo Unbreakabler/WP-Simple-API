@@ -95,6 +95,7 @@ class PostAPI {
             }
         }
         $mysqli->close();
+
         return $finalResult;
     }
 
@@ -162,6 +163,10 @@ class PostAPI {
         $mysqli = dbConnect();
 
         foreach ($posts as $post) {
+            $newDatetime = new DateTime($post->post_date);
+            $newDatetime = $newDatetime->format('F j, Y, g:i a');
+
+            $post->post_date = $newDatetime;
             //Appends the header image to each post object
             $sql = "UPDATE ".$table_prefix."postmeta
             SET meta_value = meta_value + 1

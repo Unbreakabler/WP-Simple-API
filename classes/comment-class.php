@@ -42,7 +42,7 @@ class CommentAPI {
             while ($row = $result->fetch_object()) {
 
                 //Format date into a nicer format to display client side
-                $row->comment_date = date('F j, Y, g:i a', strtotime("$row->comment_date"));
+                $row->comment_date = date('F j, g:i a', strtotime("$row->comment_date"));
                 $finalResult[] = $row;
             }
         }
