@@ -86,6 +86,11 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
+    $app->post('/', function () use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
+        $data = $CommentHandler->updateCommentKarma(TABLE_PREFIX);
+        $RequestHandler->sendJSONResponse($app, $_POST);
+    });
+
 });
 
 $app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
