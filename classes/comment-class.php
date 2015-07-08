@@ -1,7 +1,12 @@
 <?php
-
+/**
+* Builds and updates the comment structure, karma value, and handles user replies TODO(jon): Replies
+*/
 class CommentAPI {
 
+    /**
+    *   Creates a nested json structure of the comments to any depth for display in the app.
+    */
     private function getNestedChildren($comments, $parent) {
         $output = [];
 
@@ -18,7 +23,9 @@ class CommentAPI {
         return $output;
     }
 
-
+    /**
+    *   Builds the comments into a json object to send to the app, nests children bassed on their parent ID
+    */
     private function buildCommentStructure($comments) {
         $newComments = [];
         foreach ($comments as $comment) {
@@ -33,6 +40,9 @@ class CommentAPI {
         return $newComments;
     }
 
+    /**
+    *   Adds the comment meta to each comment, this is required to tell if a user has already voted for a comment
+    */
     private function getCommentMetaData($table_prefix, $mysqli, $comments) {
 
         foreach ($comments as $comment) {
@@ -46,6 +56,9 @@ class CommentAPI {
         return $comments;
     }
 
+    /**
+    *   Returns a structured list of comments for a post based on the passed in post_id
+    */
     public function getCommentsByID($table_prefix, $post_id) {
         $mysqli = dbConnect();
 
@@ -60,15 +73,9 @@ class CommentAPI {
             }
         }
 
-
-
-
-
         if (isset($resultArr)) {
-            //var_dump($resultArr);
             $comments = $this->getCommentMetaData($table_prefix, $mysqli, $resultArr);
             $comments = $this->buildCommentStructure($comments);
-            //var_dump($comments);
             return $comments;
         } else {
             if (!isset($res))
@@ -79,20 +86,34 @@ class CommentAPI {
         $mysqli->close();
     }
 
+    public function saveNewComment($table_prefix) {
+        $mysqli = dbConnect();
+
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        echo $data;
+    }
+
+    /**
+    *
+    */
     public function refactoredUpdateCommentKarma($table_prefix) {
+        header('Access-Control-Allow-Origin', '*');
         $mysqli = dbConnect();
 
         $json = file_get_contents('php://input');
         $values = json_decode($json, true);
-        $post_id = $values['post_id'];
+
         $userid = $values['user_id'];
         $comment_id = $values['commentid'];
         $vote = $values['vote'];
-        $prev_vote = $values['prev_vote'];
+
         $vote_value = new stdClass();
+        $get_vote_value = new stdClass();
 
         // Check is user is logged input
         if ($userid !== '') {
+
             $sql = "SELECT comment_karma FROM ".$table_prefix."comments WHERE comment_ID=".$comment_id;
             $result = $mysqli->query($sql);
             $commentKarma = $result->fetch_array();
@@ -100,66 +121,58 @@ class CommentAPI {
             $sql = "SELECT * FROM `".$table_prefix."commentmeta` WHERE comment_ID=$comment_id AND meta_key='vote'";
             $result = $mysqli->query($sql);
             $commentVotes = $result->fetch_array();
+            $get_vote_value = json_decode($commentVotes['meta_value']);
 
             if (!isset($commentVotes)) {
-              //create object
-              if ($vote == "voteup") {
-                  $vote_value->voteup = 1;
-                  $vote_value->votedown = 0;
-                  $vote_value->voteup_user = array($userid);
-                  $votedown_userid = '';
-                  update_karma($mysqli, $vote, $commentKarma, $comment_id);
-              } else {
-                  $vote_value->voteup = 0;
-                  $vote_value->votedown = 1;
-                  $voteup_userid = '';
-                  $vote_value->votedown_user = array($votedown_userid);
-                  $this->update_karma($mysqli, $vote, $commentKarma, $comment_id);
-              }
-
-              $vote_value = json_encode($vote_value);
-
-              $query = "insert into `".$table_prefix."commentmeta` (comment_id, meta_key, meta_value) values('" . $comment_id ."', 'vote', '". $vote_value ."')";
-              $mysqli->query($query);
-              $output = $vote_value->voteup;
-              if ($output == '') {$output=$vote_value->votedown;}
-              echo $output;
-
+                //create object
+                if ($vote == "voteup") {
+                    $vote_value->voteup = 1;
+                    $vote_value->votedown = 0;
+                    $vote_value->voteup_user = array($userid);
+                    $vote_value->votedown_user = array();
+                    $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                } else {
+                    $vote_value->voteup = 0;
+                    $vote_value->votedown = 1;
+                    $vote_value->voteup_user = array();
+                    $vote_value->votedown_user = array($userid);
+                    $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                }
+                $vote_value = json_encode($vote_value);
+                $query = "insert into `".$table_prefix."commentmeta` (comment_id, meta_key, meta_value) values('" . $comment_id ."', 'vote', '". $vote_value ."')";
+                $mysqli->query($query);
+                $output = 1;
             } else {
-              //get current vote count
-                  $get_vote_value = new stdClass();
-                  $get_vote_value = json_decode($commentVotes['meta_value']);
-
-                  if ($vote == "voteup") {
-
-                    if ($prev_vote == 'voted') {
+                //get current vote count
+                if ($vote == "voteup") {
+                    if (in_array($userid, $get_vote_value->votedown_user)) {
+                        $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
                         $new_data = $this->change_user_vote($userid, $vote, $get_vote_value->voteup_user, $get_vote_value->votedown_user, $get_vote_value->voteup, $get_vote_value->votedown);
-                        //var_dump($new_data[0]);
                         unset($get_vote_value->voteup_user);
                         unset($get_vote_value->votedown_user);
                         $get_vote_value->voteup_user = $new_data[0];
                         $get_vote_value->votedown_user = $new_data[1];
                         $get_vote_value->voteup = $new_data[2];
                         $get_vote_value->votedown= $new_data[3];
-
+                        $output = $get_vote_value->voteup;
+                    } else if (in_array($userid, $get_vote_value->voteup_user)) {
+                        $output = null;
+                        // do nothing if user has already sumbitted an upvote
                     } else {
                         $get_vote_value->voteup++;
                         $voteup_user_array = array();
                         $voteup_user_array = $get_vote_value->voteup_user;
                         $voteup_user_array[] = $userid;
                         $get_vote_value->voteup_user = $voteup_user_array;
+                        $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                        $output = $get_vote_value->voteup;
                     }//ends if for pre-vote
-
                     $vote_value_update = json_encode($get_vote_value);
-                    $query = "update ez_commentmeta set meta_value = '". $vote_value_update ."' where comment_id = '" . $comment_id . "' and meta_key ='vote'";
+                    $query = "UPDATE `".$table_prefix."commentmeta` SET meta_value = '". $vote_value_update ."' WHERE comment_id = '" . $comment_id . "' AND meta_key ='vote'";
                     $mysqli->query($query);
-                    $output = $get_vote_value->voteup;
-                    $this->update_karma($mysqli, $vote, $commentKarma, $comment_id);
-                    echo $output;
-
-                  } else if ($vote == "votedown") {
-
-                    if ($prev_vote == 'voted') {
+                } else if ($vote == "votedown") {
+                    if (in_array($userid, $get_vote_value->voteup_user))  {
+                        $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
                         $new_data = $this->change_user_vote($userid, $vote, $get_vote_value->voteup_user, $get_vote_value->votedown_user, $get_vote_value->voteup, $get_vote_value->votedown);
                         unset($get_vote_value->voteup_user);
                         unset($get_vote_value->votedown_user);
@@ -167,42 +180,61 @@ class CommentAPI {
                         $get_vote_value->votedown_user = $new_data[1];
                         $get_vote_value->voteup = $new_data[2];
                         $get_vote_value->votedown= $new_data[3];
-
+                        $output = $get_vote_value->votedown;
+                    } else if (in_array($userid, $get_vote_value->votedown_user)) {
+                        $output = null;
+                        // do nothing if user has already sumbitted a downvote
                     } else {
                         $get_vote_value->votedown++;
                         $votedown_user_array = array();
                         $votedown_user_array = $get_vote_value->votedown_user;
                         $votedown_user_array[] = $userid;
                         $get_vote_value->votedown_user = $votedown_user_array;
+                        $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                        $output = $get_vote_value->votedown;
                     }
-
                     $vote_value_update = json_encode($get_vote_value);
-                    $query = "update ez_commentmeta set meta_value = '". $vote_value_update ."' where comment_id = '" . $comment_id . "' and meta_key ='vote'";
+                    $query = "UPDATE `".$table_prefix."commentmeta` SET meta_value = '". $vote_value_update ."' WHERE comment_id = '" . $comment_id . "' AND meta_key ='vote'";
                     $mysqli->query($query);
-                    $output = $get_vote_value->votedown;
-                    $this->update_karma($mysqli, $vote, $commentKarma, $comment_id);
-                    echo $output;
-
-
-                  } //ends if
-              } //ends for each
-          }//ends if userid = ''
-          $mysqli->close();
+                } //ends if
+            } //ends for each
+        }//ends if userid = ''
+        $mysqli->close();
+        if ($output) {
+            return $newKarma;
+        }
+        return;
     }
 
-    private function update_karma($mysqli, $vote_selection, $karma_value, $id){
+    private function update_karma($mysqli, $table_prefix, $vote_selection, $karma_value, $id, $get_vote_value, $userid){
 
         if (is_null($karma_value['comment_karma'])) {
             $karma_value['comment_karma'] = 0;
         } // ends if check for null
         if ($vote_selection == 'voteup') {
-            $karma_value['comment_karma']++;
-        } else if ($vote_selection == 'votedown') {
-            $karma_value['comment_karma']--;
-        }// ends if $vote_selection
-        $query = "UPDATE ez_comments SET comment_karma = '". $karma_value['comment_karma'] ."' where comment_ID ='". $id ."'";
+            if ($get_vote_value) {
+                if (in_array($userid, $get_vote_value->votedown_user)) {
+                    $karma_value['comment_karma'] += 2;
+                }
+            } else {
+                $karma_value['comment_karma']++;
+            }
+        }
+        if ($vote_selection == 'votedown') {
+            if ($get_vote_value) {
+                if (in_array($userid, $get_vote_value->voteup_user)) {
+                    $karma_value['comment_karma'] -= 2;
+                }
+            } else {
+                $karma_value['comment_karma']--;
+            }
+        }
+
+        $query = "UPDATE `".$table_prefix."comments` SET comment_karma = '". $karma_value['comment_karma'] ."' where comment_ID ='". $id ."'";
 
         $mysqli->query($query);
+
+        return intval($karma_value['comment_karma']);
 
     } // ends function update_karma
 

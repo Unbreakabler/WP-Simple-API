@@ -59,21 +59,18 @@ $app->group('/post', function() use ($app, $PostHandler, $RequestHandler) {
 
     $app->get('/:category_id/:post_id', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
         $data = $PostHandler->getPostByID(TABLE_PREFIX, $post_id);
-        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
-        $RequestHandler->sendJSONResponse($app, $data);
+        $RequestHandler->sendJSONResponse($app, $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
     });
 
 
     $app->get('/:category_id/:post_id/prev', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
         $data = $PostHandler->getPreviousPostByID(TABLE_PREFIX, $post_id, $category_id);
-        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
-        $RequestHandler->sendJSONResponse($app, $data);
+        $RequestHandler->sendJSONResponse($app, $PostHandler->getPostMetaData(TABLE_PREFIX, $data));
     });
 
     $app->get('/:category_id/:post_id/next', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
         $data = $PostHandler->getNextPostByID(TABLE_PREFIX, $post_id, $category_id);
-        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
-        $RequestHandler->sendJSONResponse($app, $data);
+        $RequestHandler->sendJSONResponse($app, $PostHandler->getPostMetaData(TABLE_PREFIX, $data));
     });
 
 });
@@ -82,21 +79,22 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
 
     //Get all comments for current post_id
     $app->get('/:post_id', function ($post_id) use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
-        $data = $CommentHandler->getCommentsByID(TABLE_PREFIX, $post_id);
-        $RequestHandler->sendJSONResponse($app, $data);
+        $RequestHandler->sendJSONResponse($app, $CommentHandler->getCommentsByID(TABLE_PREFIX, $post_id));
     });
 
-    $app->post('/', function () use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
-        $data = $CommentHandler->refactoredUpdateCommentKarma(TABLE_PREFIX);
-        $RequestHandler->sendJSONResponse($app, $_POST);
+    $app->post('/', function () use ($app, $CommentHandler, $RequestHandler) {
+        $RequestHandler->sendJSONResponse($app, $CommentHandler->refactoredUpdateCommentKarma(TABLE_PREFIX));
+    });
+
+    $app->post('/new', function () use ($app, $CommentHandler, $RequestHandler) {
+        $RequestHandler->sendJSONResponse($app, $commentHandler->saveNewComment(TABLE_PREFIX));
     });
 
 });
 
 $app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
     $app->get('/', function () use ($app, $UserHandler, $RequestHandler) {
-        $data = $UserHandler->getUserByToken(TABLE_PREFIX);
-        $RequestHandler->sendJSONResponse($app, $data);
+        $RequestHandler->sendJSONResponse($app, $UserHandler->getUserByToken(TABLE_PREFIX));
     });
 });
 
