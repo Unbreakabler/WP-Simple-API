@@ -92,7 +92,7 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
     });
 
     $app->post('/new', function () use ($app, $CommentHandler, $RequestHandler) {
-        $data = $commentHandler->saveNewComment(TABLE_PREFIX);
+        $data = $CommentHandler->saveNewComment(TABLE_PREFIX);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
