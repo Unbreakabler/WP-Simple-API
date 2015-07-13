@@ -98,8 +98,6 @@ class CommentAPI {
 
         // Insert comment into the comments table
         $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id) VALUES (?,?,?,?,?,?,?,?)");
-        //$sql = "INSERT INTO `".$table_prefix."comments` (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id)
-        // VALUES ({$data['comment_post_ID']},'{$comment_author}', '{$comment_date}', '{$comment_date_gmt}', '{$comment_content}', {$comment_approved}, {$data['comment_parent']}, {$data['user_id']})";
         $stmt->bind_param('issssiii', $data['comment_post_ID'], $data['comment_author'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['comment_parent'], $data['user_id']);
         $stmt->execute();
         printf($stmt->error);
