@@ -92,17 +92,22 @@ class CommentAPI {
 
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
-        $comment_date = 0;
-        $comment_date_gmt = 0;
-        $comment_approved = 0;
+        $comment_date = date("Y-m-d H:i:s");
+        $comment_date_gmt = gmdate("Y-m-d H:i:s", time());
+        $comment_approved = 1;
 
-        $sql = "INSERT INTO `".$table_prefix."posts` (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id)
-        VALUES ({$data['comment_post_ID']},{$data['comment_author']}, {$comment_date}, {$comment_date_gmt}, {$data['comment_content']}, {$comment_approved}, {$data['comment_parent']}, {$data['user_id']})";
+        // Insert comment into the comments table
+        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id) VALUES (?,?,?,?,?,?,?,?)");
+        //$sql = "INSERT INTO `".$table_prefix."comments` (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id)
+        // VALUES ({$data['comment_post_ID']},'{$comment_author}', '{$comment_date}', '{$comment_date_gmt}', '{$comment_content}', {$comment_approved}, {$data['comment_parent']}, {$data['user_id']})";
+        $stmt->bind_param('issssiii', $data['comment_post_ID'], $data['comment_author'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['comment_parent'], $data['user_id']);
+        $stmt->execute();
+        printf($stmt->error);
+        $stmt->close();
 
-        echo $sql;
 
         $mysqli->close();
-        return $data;
+        return 'sent';
     }
 
     /**
