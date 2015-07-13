@@ -92,13 +92,12 @@ class CommentAPI {
 
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
-
         $comment_date = 0;
         $comment_date_gmt = 0;
         $comment_approved = 0;
 
         $sql = "INSERT INTO `".$table_prefix."posts` (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id)
-        VALUES ({$data->comment_post_ID},{$data->comment_author}, {$comment_date}, {$comment_date_gmt}, {$data->comment_content}, {$comment_approved}, {$data->comment_parent}, {$data->user_id})";
+        VALUES ({$data['comment_post_ID']},{$data['comment_author']}, {$comment_date}, {$comment_date_gmt}, {$data['comment_content']}, {$comment_approved}, {$data['comment_parent']}, {$data['user_id']})";
 
         echo $sql;
 
