@@ -86,6 +86,10 @@ class CommentAPI {
         $mysqli->close();
     }
 
+    /** Insert a new comment into the DB with the logged in users information
+    *   Currently defaults ALL comments to be approved
+    *   TODO: Remove approved=1 before deployment
+    */
     public function saveNewComment($table_prefix) {
         header('Access-Control-Allow-Origin', '*');
         $mysqli = dbConnect();
@@ -97,15 +101,16 @@ class CommentAPI {
         $comment_approved = 1;
 
         // Insert comment into the comments table
-        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id) VALUES (?,?,?,?,?,?,?,?)");
-        $stmt->bind_param('issssiii', $data['comment_post_ID'], $data['comment_author'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['comment_parent'], $data['user_id']);
+        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id,comment_author_IP) VALUES (?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param('issssiii', $data['comment_post_ID'], $data['comment_author'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['comment_parent'], $data['user_id'], $data['comment_author_IP']);
         $stmt->execute();
-        printf($stmt->error);
+        if ($stmt->error) {
+            printf($stmt->error);
+        }
+
         $stmt->close();
 
-
         $mysqli->close();
-        return 'sent';
     }
 
     /**
