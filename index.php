@@ -82,7 +82,7 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
 
     //Get all comments for current post_id
     $app->get('/:post_id', function ($post_id) use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
-        $data = $CommentHandler->getCommentsByID(TABLE_PREFIX, $post_id);
+        $data = $CommentHandler->getCommentsByPostID(TABLE_PREFIX, $post_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
@@ -92,7 +92,8 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
     });
 
     $app->post('/new', function () use ($app, $CommentHandler, $RequestHandler) {
-        $data = $CommentHandler->saveNewComment(TABLE_PREFIX);
+        $new_id = $CommentHandler->saveNewComment(TABLE_PREFIX);
+        $data = $CommentHandler->getCommentsByID(TABLE_PREFIX, $new_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 

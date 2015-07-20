@@ -57,9 +57,9 @@ class CommentAPI {
     }
 
     /**
-    *   Returns a structured list of comments for a post based on the passed in post_id
+    *   Returns a structured list of comments for a post based on the passed in Post ID
     */
-    public function getCommentsByID($table_prefix, $post_id) {
+    public function getCommentsByPostID($table_prefix, $post_id) {
         $mysqli = dbConnect();
 
         $sql = "SELECT comment_ID,comment_author,comment_date,comment_content,comment_karma,comment_parent
@@ -86,7 +86,24 @@ class CommentAPI {
         $mysqli->close();
     }
 
+    /**
+    *   Returns a structured list of comments for a post based on the passed in comment ID
+    *   Used to return the comment object created when a user submits a new comment
+    */
+    public function getCommentsByID($table_prefix, $comment_id) {
+        $mysqli = dbConnect();
+
+        $sql = "SELECT comment_ID,comment_author,comment_date,comment_content,comment_karma,comment_parent
+                FROM `".$table_prefix."comments` WHERE `comment_ID` = $comment_id AND `comment_approved` = 1";
+        if ($result = $mysqli->query($sql)) {
+            return $result->fetch_object();
+        }
+
+        $mysqli->close();
+    }
+
     public function saveNewComment($table_prefix) {
+        // TODO: Need to update comment_count when a new comment is added to a post
         header('Access-Control-Allow-Origin', '*');
         $mysqli = dbConnect();
 
@@ -101,11 +118,12 @@ class CommentAPI {
         $stmt->bind_param('issssiii', $data['comment_post_ID'], $data['comment_author'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['comment_parent'], $data['user_id']);
         $stmt->execute();
         printf($stmt->error);
+        $new_id = $mysqli->insert_id;
         $stmt->close();
 
 
         $mysqli->close();
-        return 'sent';
+        return $new_id;
     }
 
     /**
