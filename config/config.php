@@ -26,7 +26,7 @@ $categories = [
     '125', //Business
     '78', //Community
     '79', //Entertainment
-    '83'
+    '83'  //Opinion
 ]
 
 ?>
