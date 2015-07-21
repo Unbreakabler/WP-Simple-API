@@ -103,7 +103,6 @@ class CommentAPI {
     }
 
     public function saveNewComment($table_prefix) {
-        // TODO: Need to update comment_count when a new comment is added to a post
         header('Access-Control-Allow-Origin', '*');
         $mysqli = dbConnect();
 
@@ -121,6 +120,10 @@ class CommentAPI {
         $new_id = $mysqli->insert_id;
         $stmt->close();
 
+        // Increment comment_count on post when new comment is added
+        $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
+        echo $sql;
+        $mysqli->query($sql);
 
         $mysqli->close();
         return $new_id;
