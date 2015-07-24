@@ -189,9 +189,9 @@ class PostAPI {
                         $sql = "SELECT * FROM `".$table_prefix."posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
                         if ($newresult = $mysqli->query($sql)) {
                             while ($row = $newresult->fetch_object()) {
-                                $row->guid = substr($row->guid, 0, -4);
-                                $post->thumbnailURI = $row->guid.'-300x160.jpg';
-                                $post->thumbnailURI70 = $row->guid.'-70x70.jpg';
+                                $path_parts = pathinfo($row->guid);
+                                $post->thumbnailURI = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-300x160.' . $path_parts['extension'];
+                                $post->thumbnailURI70 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-70x70.' . $path_parts['extension'];
                             }
                         }
                     } else {
@@ -209,6 +209,7 @@ class PostAPI {
 
             if (!isset($post->thumbnailURI)) {
                 $post->thumbnailURI = DEFAULT_POST_IMAGE;
+                $post->thumbnailURI70 = DEFAULT_POST_IMAGE70;
             }
         }
 
