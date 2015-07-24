@@ -189,7 +189,9 @@ class PostAPI {
                         $sql = "SELECT * FROM `".$table_prefix."posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
                         if ($newresult = $mysqli->query($sql)) {
                             while ($row = $newresult->fetch_object()) {
-                                $post->thumbnailURI = $row->guid;
+                                $row->guid = substr($row->guid, 0, -4);
+                                $post->thumbnailURI = $row->guid.'-300x160.jpg';
+                                $post->thumbnailURI70 = $row->guid.'-70x70.jpg';
                             }
                         }
                     } else {

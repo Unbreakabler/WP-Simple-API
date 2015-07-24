@@ -94,6 +94,7 @@ class UserAPI {
                 break;
 
             case 'google':
+                # $user = $this->getUserInfo('')
                 # $user = $this->getUserInfo('https://accounts.google.com/o/oauth2/auth?response_type=token&scope=profile&redirect_uri=http://localhost/callback&client_id=396458382686-pg2fkuho35m7ck9bdmbo238glbq580gd.apps.googleusercontent.com');
                 # code...
                 break;
