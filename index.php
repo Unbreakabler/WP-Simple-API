@@ -91,8 +91,14 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
+    $app->post('/response', function () use ($app, $CommentHandler, $RequestHandler) {
+        $new_id = $CommentHandler->setCommentResponse(TABLE_PREFIX);
+        $data = $CommentHandler->getCommentsByID(TABLE_PREFIX, $new_id);
+        $RequestHandler->sendJSONResponse($app, $data);
+    });
+
     $app->post('/new', function () use ($app, $CommentHandler, $RequestHandler) {
-        $new_id = $CommentHandler->saveNewComment(TABLE_PREFIX);
+        $new_id = $CommentHandler->setNewComment(TABLE_PREFIX);
         $data = $CommentHandler->getCommentsByID(TABLE_PREFIX, $new_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });

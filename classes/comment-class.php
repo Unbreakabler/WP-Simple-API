@@ -102,7 +102,7 @@ class CommentAPI {
         $mysqli->close();
     }
 
-    public function saveNewComment($table_prefix) {
+    public function setCommentResponse($table_prefix) {
         header('Access-Control-Allow-Origin', '*');
         $mysqli = dbConnect();
 
@@ -121,9 +121,38 @@ class CommentAPI {
         $stmt->close();
 
         // Increment comment_count on post when new comment is added
-        $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
-        echo $sql;
-        $mysqli->query($sql);
+        if (!($mysqli->affected_rows < 1)) {
+            $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
+            $mysqli->query($sql);
+        }
+
+        $mysqli->close();
+        return $new_id;
+    }
+
+    public function setNewComment($table_prefix) {
+        header('Access-Control-Allow-Origin', '*');
+        $mysqli = dbConnect();
+
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        $comment_date = date("Y-m-d H:i:s");
+        $comment_date_gmt = gmdate("Y-m-d H:i:s", time());
+        $comment_approved = 1;
+
+        // Insert comment into the comments table
+        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,user_id) VALUES (?,?,?,?,?,?,?)");
+        $stmt->bind_param('issssii', $data['comment_post_ID'], $data['comment_author'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['user_id']);
+        $stmt->execute();
+        printf($stmt->error);
+        $new_id = $mysqli->insert_id;
+        $stmt->close();
+
+        // Increment comment_count on post when new comment is added
+        if (!($mysqli->affected_rows < 1)) {
+            $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
+            $mysqli->query($sql);
+        }
 
         $mysqli->close();
         return $new_id;

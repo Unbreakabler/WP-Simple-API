@@ -88,6 +88,12 @@ class PostAPI {
     public function getPostByID($table_prefix, $post_id) {
         $mysqli = dbConnect();
 
+        $sql = "UPDATE ".$table_prefix."postmeta
+        SET meta_value = meta_value + 1
+        WHERE post_id = $post_id
+        AND meta_key IN ('".VIEW_METAKEY."')";
+        $mysqli->query($sql);
+
         $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_count FROM ".$table_prefix."posts WHERE `ID` = ($post_id)";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
@@ -159,6 +165,7 @@ class PostAPI {
 
     }
 
+    // FIXME: Getting called 5 times on initial page load (view count is increasing by 5 when called from app)
     public function getPostMetaData($table_prefix, $posts) {
         $mysqli = dbConnect();
 
@@ -168,11 +175,6 @@ class PostAPI {
 
             $post->post_date = $newDatetime;
             //Appends the header image to each post object
-            $sql = "UPDATE ".$table_prefix."postmeta
-            SET meta_value = meta_value + 1
-            WHERE post_id = $post->ID
-            AND meta_key IN ('".VIEW_METAKEY."')";
-            $mysqli->query($sql);
 
             $sql = "SELECT * FROM ".$table_prefix."postmeta
                     WHERE post_id = $post->ID
@@ -187,7 +189,9 @@ class PostAPI {
                         $sql = "SELECT * FROM `".$table_prefix."posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
                         if ($newresult = $mysqli->query($sql)) {
                             while ($row = $newresult->fetch_object()) {
-                                $post->thumbnailURI = $row->guid;
+                                $row->guid = substr($row->guid, 0, -4);
+                                $post->thumbnailURI = $row->guid.'-300x160.jpg';
+                                $post->thumbnailURI70 = $row->guid.'-70x70.jpg';
                             }
                         }
                     } else {
