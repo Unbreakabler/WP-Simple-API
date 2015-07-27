@@ -45,8 +45,6 @@ class PostAPI {
             while($row = $result->fetch_object()) {
                 $resultArray[] = $row;
             }
-        } else {
-            return 'Select Statement Failed';
         }
 
         $mysqli->close();
@@ -195,7 +193,6 @@ class PostAPI {
                             }
                         }
                     } else {
-                        //var_dump($row->meta_value);
                         $post->views = $row->meta_value;
                     }
                 }
