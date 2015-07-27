@@ -190,6 +190,7 @@ class PostAPI {
                                 $path_parts = pathinfo($row->guid);
                                 $post->thumbnailURI = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-300x160.' . $path_parts['extension'];
                                 $post->thumbnailURI70 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-70x70.' . $path_parts['extension'];
+                                $post->thumbnailURI150 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-150x150.' . $path_parts['extension'];
                             }
                         }
                     } else {
@@ -207,6 +208,7 @@ class PostAPI {
             if (!isset($post->thumbnailURI)) {
                 $post->thumbnailURI = DEFAULT_POST_IMAGE;
                 $post->thumbnailURI70 = DEFAULT_POST_IMAGE70;
+                $post->thumbnailURI150 = DEFAULT_POST_IMAGE150;
             }
         }
 
