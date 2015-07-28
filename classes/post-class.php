@@ -236,7 +236,7 @@ class PostAPI {
                     $sql = "SELECT name FROM `".$table_prefix."terms` WHERE term_id = $selectedTerm";
                     if ($result = $mysqli->query($sql)) {
                         while ($row = $result->fetch_object()) {
-                            $post->category_name[] = $row->name;
+                            $post->category_name = $row->name;
                         }
                     }
                     unset($post->terms);
