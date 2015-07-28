@@ -34,21 +34,21 @@ $app->group('/category', function () use ($app, $PostHandler, $RequestHandler) {
     $app->get('/:category_id', function($category_id) use ($app, $PostHandler, $RequestHandler) {
         $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $category_id);
         $postListArray = $PostHandler->getPostListByID(TABLE_PREFIX, $postArray);
-        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray);
+        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray, $category_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
     $app->get ('/:category_id/:count', function($category_id,$count) use ($app, $PostHandler, $RequestHandler) {
         $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $category_id, $count);
         $postListArray = $PostHandler->getPostListByID(TABLE_PREFIX, $postArray);
-        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray);
+        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray, $category_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
     $app->get ('/:category_id/:count/:index', function($category_id, $count, $index) use ($app, $PostHandler, $RequestHandler) {
         $postArray = $PostHandler->getRecentPostsByCategory(TABLE_PREFIX, $category_id, $count, $index);
         $postListArray = $PostHandler->getPostListByID(TABLE_PREFIX, $postArray);
-        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray);
+        $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $postListArray, $category_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 });
