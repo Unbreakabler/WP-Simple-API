@@ -228,7 +228,11 @@ class PostAPI {
                             $post->terms[] = $row->term_id;
                         }
                     }
-                    $selectedTerm = $post->terms[0];
+                    if (($post->terms[0] == DEFAULT_TERM_ID) && (isset($post->terms[1]))) {
+                        $selectedTerm = $post->terms[1];
+                    } else {
+                        $selectedTerm = $post->terms[0];
+                    }
                     $sql = "SELECT name FROM `".$table_prefix."terms` WHERE term_id = $selectedTerm";
                     if ($result = $mysqli->query($sql)) {
                         while ($row = $result->fetch_object()) {
