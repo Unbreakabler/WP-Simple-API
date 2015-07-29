@@ -78,6 +78,16 @@ $app->group('/post', function() use ($app, $PostHandler, $RequestHandler) {
 
 });
 
+$app->group('/gallery', function () use ($app, $PostHandler, $RequestHandler) {
+
+    $app->post('/', function () use ($app, $PostHandler, $RequestHandler) {
+        $data = $PostHandler->getGalleryMeta(TABLE_PREFIX);
+        $data = $PostHandler->buildGalleryLinks($data);
+        $RequestHandler->sendJSONResponse($app, $data);
+    });
+
+});
+
 $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
 
     //Get all comments for current post_id
