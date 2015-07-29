@@ -43,10 +43,11 @@ class PostAPI {
             $path_parts = pathinfo($urlEnd->fullsize);
             $urlEnd->scaled = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-300x160.' . $path_parts['extension'];
 
-            $exists = $this->remoteFileExists($urlEnd->scaled);
-            if (!$exists) {
-                $urlEnd->scaled = $urlEnd->fullsize;
-            }
+            // FIXME: Reanble file checking, disabled until I can improve the performance
+            // $exists = $this->remoteFileExists($urlEnd->scaled);
+            // if (!$exists) {
+            //     $urlEnd->scaled = $urlEnd->fullsize;
+            // }
 
         }
         return $links;
