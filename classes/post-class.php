@@ -208,34 +208,40 @@ class PostAPI {
                 $sql = "SELECT term_taxonomy_id FROM `".$table_prefix."term_relationships` WHERE `object_id` = $post->ID";
                 if ($result = $mysqli->query($sql)) {
                     while ($row = $result->fetch_object()) {
-                        if (($row->term_taxonomy_id != $category_id) && ($row->term_taxonomy_id != 2)) {
+                        if (($row->term_taxonomy_id != $category_id) && ($row->term_taxonomy_id != FEATURED_TERM_ID)) {
                             $post->categories[] = $row->term_taxonomy_id;
                         }
                     }
                 }
 
                 $catString = '';
-                foreach ($post->categories as $cat) {
-                    $catString .= $cat . ',';
-                }
-                $catString = rtrim($catString, ",");
+                if (isset($post->categories)) {
+                    foreach ($post->categories as $cat) {
+                        $catString .= $cat . ',';
+                    }
+                    $catString = rtrim($catString, ",");
 
-                $sql = "SELECT term_id FROM `".$table_prefix."term_taxonomy` WHERE `term_taxonomy_id` IN ($catString)";
-                //echo $sql;
-                if ($result = $mysqli->query($sql)) {
-                    while ($row = $result->fetch_object()) {
-                        $post->terms[] = $row->term_id;
+                    $sql = "SELECT term_id FROM `".$table_prefix."term_taxonomy` WHERE `term_taxonomy_id` IN ($catString)";
+                    //echo $sql;
+                    if ($result = $mysqli->query($sql)) {
+                        while ($row = $result->fetch_object()) {
+                            $post->terms[] = $row->term_id;
+                        }
                     }
-                }
-                $selectedTerm = $post->terms[0];
-                $sql = "SELECT name FROM `".$table_prefix."terms` WHERE term_id = $selectedTerm";
-                if ($result = $mysqli->query($sql)) {
-                    while ($row = $result->fetch_object()) {
-                        $post->category_name[] = $row->name;
+                    if (($post->terms[0] == DEFAULT_TERM_ID) && (isset($post->terms[1]))) {
+                        $selectedTerm = $post->terms[1];
+                    } else {
+                        $selectedTerm = $post->terms[0];
                     }
+                    $sql = "SELECT name FROM `".$table_prefix."terms` WHERE term_id = $selectedTerm";
+                    if ($result = $mysqli->query($sql)) {
+                        while ($row = $result->fetch_object()) {
+                            $post->category_name = $row->name;
+                        }
+                    }
+                    unset($post->terms);
+                    unset($post->categories);
                 }
-                unset($post->terms);
-                unset($post->categories);
             }
         }
 
