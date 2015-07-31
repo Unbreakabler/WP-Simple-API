@@ -6,15 +6,10 @@ class UserAPI {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL,
-            $url . $_GET['access_token'] . '&fields=id,name,email&format=json'
+            $url . $_GET['access_token'] . '&fields=id,first_name,last_name,email&format=json'
         );
         $content = curl_exec($ch);
         return json_decode($content);
-    }
-
-    function rand_string( $length ) {
-        $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        return substr(str_shuffle($chars),0,$length);
     }
 
     private function randomPasswordGen() {
@@ -26,16 +21,30 @@ class UserAPI {
         return $hash;
     }
 
-    private function createNewUser($mysqli, $table_prefix,$user, $service_db_id) {
+    private function createNewUser($mysqli, $table_prefix, $user, $service_db_id) {
+        $displayName = '';
+        if (isset($user->first_name)) {
+            $displayName .= strtolower($user->first_name);
+        }
+        if (isset($user->last_name)) {
+            $displayName .= strtolower($user->last_name);
+        }
 
-        $displayName = strtolower($user->first_name.$user->last_name);
+        // FIXME: Are there edge cases where the facebook API doesn't return a first or last name?
+        if (!$displayName) {
+            return;
+        }
+
+
+        //maximum length for a new accounts display name
+        $displayName = substr($displayName, 0, 32);
 
         $pass = $this->randomPasswordGen();
         $time = date('Y-m-d H:i:s');
 
         $sql = "INSERT INTO `".$table_prefix."users` (user_login,user_pass,user_nicename,user_email,user_registered,display_name)
         VALUES ('$displayName','$pass','$displayName','$user->email','$time','$user->first_name $user->last_name')";
-        // var_dump($sql);
+        //var_dump($sql);
 
         $mysqli->query($sql);
 
@@ -104,7 +113,6 @@ class UserAPI {
         $mysqli = dbConnect();
 
         $sql = "SELECT ID,user_nicename,display_name,user_email FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
-        //var_dump($user);
 
         if ($result = $mysqli->query($sql)) {
             if ($res = $result->fetch_object()) {
@@ -121,9 +129,9 @@ class UserAPI {
                 }
 
             } else {
+                var_dump('asdfasdf');
                 // if email doesn't match an existing account, create new account
-                // if it doesn't we will have to create the account
-                $this->createNewUser($mysqli, $table_prefix,$user,$service_db_id);
+                $this->createNewUser($mysqli, $table_prefix, $user, $service_db_id);
                 $sql = "SELECT ID,user_nicename,display_name FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
                 $result = $mysqli->query($sql);
                 $res = $result->fetch_object();

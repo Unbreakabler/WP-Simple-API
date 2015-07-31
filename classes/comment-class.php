@@ -63,7 +63,7 @@ class CommentAPI {
         $mysqli = dbConnect();
 
         $sql = "SELECT comment_ID,comment_author,comment_date,comment_content,comment_karma,comment_parent
-                FROM `".$table_prefix."comments` WHERE `comment_post_ID` = $post_id AND `comment_approved` = 1";
+                FROM `".$table_prefix."comments` WHERE `comment_post_ID` = $post_id";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
 
@@ -138,7 +138,7 @@ class CommentAPI {
         $data = json_decode($json, true);
         $comment_date = date("Y-m-d H:i:s");
         $comment_date_gmt = gmdate("Y-m-d H:i:s", time());
-        $comment_approved = 1;
+        $comment_approved = 0;
 
         // Insert comment into the comments table
         $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,user_id) VALUES (?,?,?,?,?,?,?)");
