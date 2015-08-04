@@ -93,8 +93,8 @@ class CommentAPI {
     public function getCommentsByID($table_prefix, $comment_id) {
         $mysqli = dbConnect();
 
-        $sql = "SELECT comment_ID,comment_author,comment_date,comment_content,comment_karma,comment_parent
-                FROM `".$table_prefix."comments` WHERE `comment_ID` = $comment_id AND `comment_approved` = 1";
+        $sql = "SELECT comment_ID,comment_author,comment_author_email,comment_approved,comment_date,comment_content,comment_karma,comment_parent
+                FROM `".$table_prefix."comments` WHERE `comment_ID` = $comment_id";
         if ($result = $mysqli->query($sql)) {
             return $result->fetch_object();
         }
@@ -133,14 +133,13 @@ class CommentAPI {
         $stmt->execute();
         printf($stmt->error);
         $new_id = $mysqli->insert_id;
-        $stmt->close();
 
         // Increment comment_count on post when new comment is added
-        if (!($mysqli->affected_rows < 1)) {
+        if ($stmt->affected_rows > 0) {
             $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
-            var_dump($sql);
             $mysqli->query($sql);
         }
+        $stmt->close();
 
         $mysqli->close();
         return $new_id;
@@ -177,13 +176,13 @@ class CommentAPI {
         $stmt->execute();
         printf($stmt->error);
         $new_id = $mysqli->insert_id;
-        $stmt->close();
 
         // Increment comment_count on post when new comment is added
-        if (!($mysqli->affected_rows < 1)) {
+        if ($stmt->affected_rows > 0) {
             $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
             $mysqli->query($sql);
         }
+        $stmt->close();
 
         $mysqli->close();
         return $new_id;
