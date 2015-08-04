@@ -62,7 +62,7 @@ class CommentAPI {
     public function getCommentsByPostID($table_prefix, $post_id) {
         $mysqli = dbConnect();
 
-        $sql = "SELECT comment_ID,comment_author,comment_date,comment_content,comment_karma,comment_parent
+        $sql = "SELECT comment_ID,comment_author,comment_author_email,comment_approved,comment_date,comment_content,comment_karma,comment_parent
                 FROM `".$table_prefix."comments` WHERE `comment_post_ID` = $post_id";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
