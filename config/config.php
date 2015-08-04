@@ -19,7 +19,9 @@ define('VIEW_METAKEY', 'tie_views');
 define('FEATURED_TERM_ID', '2');
 define('DEFAULT_TERM_ID', '5');
 
-define('DEFAULT_POST_IMAGE', 'http://www.kamloopsthisweek.com/wp-content/uploads/2014/09/NEWS-HEADER-2.jpg');
+define('DEFAULT_POST_IMAGE', 'http://www.kamloopsthisweek.com/wp-content/uploads/2014/09/NEWS-HEADER-2-300x150.jpg');
+define('DEFAULT_POST_IMAGE70', 'http://www.kamloopsthisweek.com/wp-content/uploads/2014/09/NEWS-HEADER-2-70x70.jpg');
+define('DEFAULT_POST_IMAGE150', 'http://www.kamloopsthisweek.com/wp-content/uploads/2014/09/NEWS-HEADER-2-150x150.jpg');
 
 ini_set('xdebug.var_display_max_depth', 5);
 ini_set('xdebug.var_display_max_children', 256);
