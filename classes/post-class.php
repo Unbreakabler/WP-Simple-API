@@ -237,7 +237,7 @@ class PostAPI {
 
             $sql = "SELECT * FROM ".$table_prefix."postmeta
                     WHERE post_id = $post->ID
-                    AND meta_key IN ('".VIEW_METAKEY."','_thumbnail_id')";
+                    AND meta_key IN ('".VIEW_METAKEY."','_thumbnail_id','CODE1')";
 
             //var_dump($sql);
             if ($result = $mysqli->query($sql)) {
@@ -254,8 +254,10 @@ class PostAPI {
                                 $post->thumbnailURI150 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-150x150.' . $path_parts['extension'];
                             }
                         }
-                    } else {
+                    } else if ($row->meta_key == VIEW_METAKEY) {
                         $post->views = $row->meta_value;
+                    } else {
+                        $post->code = $row->meta_value;
                     }
                 }
             }

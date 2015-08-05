@@ -63,7 +63,6 @@ $app->group('/post', function() use ($app, $PostHandler, $RequestHandler) {
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-
     $app->get('/:category_id/:post_id/prev', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
         $data = $PostHandler->getPreviousPostByID(TABLE_PREFIX, $post_id, $category_id);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
