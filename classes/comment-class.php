@@ -62,8 +62,8 @@ class CommentAPI {
     public function getCommentsByPostID($table_prefix, $post_id) {
         $mysqli = dbConnect();
 
-        $sql = "SELECT comment_ID,comment_author,comment_date,comment_content,comment_karma,comment_parent
-                FROM `".$table_prefix."comments` WHERE `comment_post_ID` = $post_id AND `comment_approved` = 1";
+        $sql = "SELECT comment_ID,comment_author,comment_author_email,comment_approved,comment_date,comment_content,comment_karma,comment_parent
+                FROM `".$table_prefix."comments` WHERE `comment_post_ID` = $post_id";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
 
@@ -93,8 +93,8 @@ class CommentAPI {
     public function getCommentsByID($table_prefix, $comment_id) {
         $mysqli = dbConnect();
 
-        $sql = "SELECT comment_ID,comment_author,comment_date,comment_content,comment_karma,comment_parent
-                FROM `".$table_prefix."comments` WHERE `comment_ID` = $comment_id AND `comment_approved` = 1";
+        $sql = "SELECT comment_ID,comment_author,comment_author_email,comment_approved,comment_date,comment_content,comment_karma,comment_parent
+                FROM `".$table_prefix."comments` WHERE `comment_ID` = $comment_id";
         if ($result = $mysqli->query($sql)) {
             return $result->fetch_object();
         }
@@ -110,21 +110,36 @@ class CommentAPI {
         $data = json_decode($json, true);
         $comment_date = date("Y-m-d H:i:s");
         $comment_date_gmt = gmdate("Y-m-d H:i:s", time());
-        $comment_approved = 1;
+        $comment_approved = 0;
+
+        // Check if user is in whitelist
+        $sql = "SELECT option_value FROM ".$table_prefix."options WHERE option_name = 'whitelist_keys'";
+
+        if ($result = $mysqli->query($sql)) {
+            $whitelist = $result->fetch_array();
+            $whitelist_array = explode("\n", $whitelist[0] );
+        }
+
+        foreach ($whitelist_array as $user) {
+            $user = trim($user);
+            if ($data['comment_author_email'] == $user) {
+                $comment_approved = 1;
+            }
+        }
 
         // Insert comment into the comments table
-        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id) VALUES (?,?,?,?,?,?,?,?)");
-        $stmt->bind_param('issssiii', $data['comment_post_ID'], $data['comment_author'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['comment_parent'], $data['user_id']);
+        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_author_email,comment_date,comment_date_gmt,comment_content,comment_approved,comment_parent,user_id) VALUES (?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param('isssssiii', $data['comment_post_ID'], $data['comment_author'], $data['comment_author_email'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['comment_parent'], $data['user_id']);
         $stmt->execute();
         printf($stmt->error);
         $new_id = $mysqli->insert_id;
-        $stmt->close();
 
         // Increment comment_count on post when new comment is added
-        if (!($mysqli->affected_rows < 1)) {
+        if ($stmt->affected_rows > 0) {
             $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
             $mysqli->query($sql);
         }
+        $stmt->close();
 
         $mysqli->close();
         return $new_id;
@@ -138,21 +153,36 @@ class CommentAPI {
         $data = json_decode($json, true);
         $comment_date = date("Y-m-d H:i:s");
         $comment_date_gmt = gmdate("Y-m-d H:i:s", time());
-        $comment_approved = 1;
+        $comment_approved = 0;
+
+        // Check if user is in whitelist
+        $sql = "SELECT option_value FROM ".$table_prefix."options WHERE option_name = 'whitelist_keys'";
+
+        if ($result = $mysqli->query($sql)) {
+            $whitelist = $result->fetch_array();
+            $whitelist_array = explode("\n", $whitelist[0] );
+        }
+
+        foreach ($whitelist_array as $user) {
+            $user = trim($user);
+            if ($data['comment_author_email'] == $user) {
+                $comment_approved = 1;
+            }
+        }
 
         // Insert comment into the comments table
-        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_date,comment_date_gmt,comment_content,comment_approved,user_id) VALUES (?,?,?,?,?,?,?)");
-        $stmt->bind_param('issssii', $data['comment_post_ID'], $data['comment_author'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['user_id']);
+        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_author_email,comment_date,comment_date_gmt,comment_content,comment_approved,user_id) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt->bind_param('isssssii', $data['comment_post_ID'], $data['comment_author'], $data['comment_author_email'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['user_id']);
         $stmt->execute();
         printf($stmt->error);
         $new_id = $mysqli->insert_id;
-        $stmt->close();
 
         // Increment comment_count on post when new comment is added
-        if (!($mysqli->affected_rows < 1)) {
+        if ($stmt->affected_rows > 0) {
             $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
             $mysqli->query($sql);
         }
+        $stmt->close();
 
         $mysqli->close();
         return $new_id;
