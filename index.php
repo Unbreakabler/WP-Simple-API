@@ -63,7 +63,6 @@ $app->group('/post', function() use ($app, $PostHandler, $RequestHandler) {
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-
     $app->get('/:category_id/:post_id/prev', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
         $data = $PostHandler->getPreviousPostByID(TABLE_PREFIX, $post_id, $category_id);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
@@ -73,6 +72,16 @@ $app->group('/post', function() use ($app, $PostHandler, $RequestHandler) {
     $app->get('/:category_id/:post_id/next', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
         $data = $PostHandler->getNextPostByID(TABLE_PREFIX, $post_id, $category_id);
         $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+        $RequestHandler->sendJSONResponse($app, $data);
+    });
+
+});
+
+$app->group('/gallery', function () use ($app, $PostHandler, $RequestHandler) {
+
+    $app->post('/', function () use ($app, $PostHandler, $RequestHandler) {
+        $data = $PostHandler->getGalleryMeta(TABLE_PREFIX);
+        $data = $PostHandler->buildGalleryLinks($data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
