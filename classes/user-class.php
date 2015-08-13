@@ -9,7 +9,6 @@ class UserAPI {
             $url . $_GET['access_token'] . '&fields=id,name,email&format=json'
         );
         $content = curl_exec($ch);
-        //echo $content;
         return json_decode($content);
     }
 
@@ -70,9 +69,6 @@ class UserAPI {
         ($NEWUSERID,'uultra_last_login','$time')";
 
         $res = $mysqli->query($sql);
-        // var_dump($res);
-
-        // var_dump($sql);
 
         return 0;
     }
@@ -85,6 +81,7 @@ class UserAPI {
         switch ($service) {
             case 'facebook':
                 $user = $this->getUserInfo('https://graph.facebook.com/v2.2/me/?access_token=');
+                $user->picture = 'https://graph.facebook.com/' . $user->id . '/picture?type=normal';
                 $service_db_id = 'xoouser_utlra_facebook_id';
                 # code...
                 break;
@@ -94,6 +91,7 @@ class UserAPI {
                 break;
 
             case 'google':
+                # $user = $this->getUserInfo('')
                 # $user = $this->getUserInfo('https://accounts.google.com/o/oauth2/auth?response_type=token&scope=profile&redirect_uri=http://localhost/callback&client_id=396458382686-pg2fkuho35m7ck9bdmbo238glbq580gd.apps.googleusercontent.com');
                 # code...
                 break;
@@ -105,7 +103,7 @@ class UserAPI {
 
         $mysqli = dbConnect();
 
-        $sql = "SELECT ID,user_nicename,display_name FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
+        $sql = "SELECT ID,user_nicename,display_name,user_email FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
         //var_dump($user);
 
         if ($result = $mysqli->query($sql)) {
@@ -132,8 +130,7 @@ class UserAPI {
                 unset($res->user_pass);
             }
         }
-
-
+        $res->picture = $user->picture;
         return $res;
     }
 

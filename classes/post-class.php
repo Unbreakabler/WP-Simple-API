@@ -27,8 +27,6 @@ class PostAPI {
 
         $indexDate = $this->setIndexDate($table_prefix, $index, $mysqli);
 
-        //TODO: Look up $term_taxonomy_id in term_taxonomy table
-
         $sql = "SELECT ".$table_prefix."posts.ID
                 FROM ".$table_prefix."posts INNER JOIN ".$table_prefix."term_relationships ON
                 (".$table_prefix."posts.ID = ".$table_prefix."term_relationships.object_id) WHERE 1=1
@@ -45,8 +43,6 @@ class PostAPI {
             while($row = $result->fetch_object()) {
                 $resultArray[] = $row;
             }
-        } else {
-            return 'Select Statement Failed';
         }
 
         $mysqli->close();
@@ -87,6 +83,12 @@ class PostAPI {
 
     public function getPostByID($table_prefix, $post_id) {
         $mysqli = dbConnect();
+
+        $sql = "UPDATE ".$table_prefix."postmeta
+        SET meta_value = meta_value + 1
+        WHERE post_id = $post_id
+        AND meta_key IN ('".VIEW_METAKEY."')";
+        $mysqli->query($sql);
 
         $sql = "SELECT ID,post_author,post_date,post_content,post_title,comment_count FROM ".$table_prefix."posts WHERE `ID` = ($post_id)";
         if ($result = $mysqli->query($sql)) {
@@ -152,14 +154,11 @@ class PostAPI {
             }
         }
         $mysqli->close();
-        // if (!$finalResult) {
-        //     $finalResult = 'no previous post';
-        // }
         return $finalResult;
-
     }
 
-    public function getPostMetaData($table_prefix, $posts) {
+    // FIXME: Getting called 5 times on initial page load (view count is increasing by 5 when called from app)
+    public function getPostMetaData($table_prefix, $posts, $category_id = 0) {
         $mysqli = dbConnect();
 
         foreach ($posts as $post) {
@@ -168,11 +167,6 @@ class PostAPI {
 
             $post->post_date = $newDatetime;
             //Appends the header image to each post object
-            $sql = "UPDATE ".$table_prefix."postmeta
-            SET meta_value = meta_value + 1
-            WHERE post_id = $post->ID
-            AND meta_key IN ('".VIEW_METAKEY."')";
-            $mysqli->query($sql);
 
             $sql = "SELECT * FROM ".$table_prefix."postmeta
                     WHERE post_id = $post->ID
@@ -187,11 +181,13 @@ class PostAPI {
                         $sql = "SELECT * FROM `".$table_prefix."posts` WHERE `ID` = $row->meta_value AND `post_type` LIKE 'attachment'";
                         if ($newresult = $mysqli->query($sql)) {
                             while ($row = $newresult->fetch_object()) {
-                                $post->thumbnailURI = $row->guid;
+                                $path_parts = pathinfo($row->guid);
+                                $post->thumbnailURI = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-300x160.' . $path_parts['extension'];
+                                $post->thumbnailURI70 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-70x70.' . $path_parts['extension'];
+                                $post->thumbnailURI150 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-150x150.' . $path_parts['extension'];
                             }
                         }
                     } else {
-                        //var_dump($row->meta_value);
                         $post->views = $row->meta_value;
                     }
                 }
@@ -205,13 +201,52 @@ class PostAPI {
 
             if (!isset($post->thumbnailURI)) {
                 $post->thumbnailURI = DEFAULT_POST_IMAGE;
+                $post->thumbnailURI70 = DEFAULT_POST_IMAGE70;
+                $post->thumbnailURI150 = DEFAULT_POST_IMAGE150;
+            }
+            if ($category_id != 0) {
+                $sql = "SELECT term_taxonomy_id FROM `".$table_prefix."term_relationships` WHERE `object_id` = $post->ID";
+                if ($result = $mysqli->query($sql)) {
+                    while ($row = $result->fetch_object()) {
+                        if (($row->term_taxonomy_id != $category_id) && ($row->term_taxonomy_id != FEATURED_TERM_ID)) {
+                            $post->categories[] = $row->term_taxonomy_id;
+                        }
+                    }
+                }
+
+                $catString = '';
+                if (isset($post->categories)) {
+                    foreach ($post->categories as $cat) {
+                        $catString .= $cat . ',';
+                    }
+                    $catString = rtrim($catString, ",");
+
+                    $sql = "SELECT term_id FROM `".$table_prefix."term_taxonomy` WHERE `term_taxonomy_id` IN ($catString)";
+                    //echo $sql;
+                    if ($result = $mysqli->query($sql)) {
+                        while ($row = $result->fetch_object()) {
+                            $post->terms[] = $row->term_id;
+                        }
+                    }
+                    if (($post->terms[0] == DEFAULT_TERM_ID) && (isset($post->terms[1]))) {
+                        $selectedTerm = $post->terms[1];
+                    } else {
+                        $selectedTerm = $post->terms[0];
+                    }
+                    $sql = "SELECT name FROM `".$table_prefix."terms` WHERE term_id = $selectedTerm";
+                    if ($result = $mysqli->query($sql)) {
+                        while ($row = $result->fetch_object()) {
+                            $post->category_name = $row->name;
+                        }
+                    }
+                    unset($post->terms);
+                    unset($post->categories);
+                }
             }
         }
 
-        //var_dump($posts);
         $mysqli->close();
         return $posts;
-        //var_dump($thumbnailID);
     }
 }
 ?>
