@@ -3,6 +3,7 @@
 //Framework for a simple RESTful API implementation
 require 'Slim/Slim/Slim.php';
 \Slim\Slim::registerAutoloader();
+use \Firebase\JWT\JWT;
 
 //Grabbing the DB credentials to acces the necessary SQL tables
 require 'config/config.php';
@@ -117,6 +118,11 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
 $app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
     $app->get('/', function () use ($app, $UserHandler, $RequestHandler) {
         $data = $UserHandler->getUserByToken(TABLE_PREFIX);
+        $RequestHandler->sendJSONResponse($app, $data);
+    });
+
+    $app->get('/signup', function () use ($app, $UserHandler, $RequestHandler) {
+        $data = $UserHandler->userSignUp();
         $RequestHandler->sendJSONResponse($app, $data);
     });
 });

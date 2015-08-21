@@ -1,5 +1,6 @@
 <?php
-
+require './vendor/firebase/php-jwt/src/JWT.php';
+use \Firebase\JWT\JWT;
 class UserAPI {
 
     private function getUserInfo($url) {
@@ -19,6 +20,21 @@ class UserAPI {
         $salt = str_replace('+', '.', $salt);
         $hash = crypt($pass, '$P$B'.$salt.'$');
         return $hash;
+    }
+
+    public function userSignUp() {
+        $username = 'jon';
+        $password = '1234';
+
+        $key = 'secret123';
+        $token = array(
+            "username" => $username,
+            "password" => $password,
+            "iat" => 1356999524,
+            "nbf" => 1357000000
+        );
+        $jwt = JWT::encode($token, $key);
+        return $jwt;
     }
 
     private function createNewUser($mysqli, $table_prefix, $user, $service_db_id) {
@@ -129,7 +145,6 @@ class UserAPI {
                 }
 
             } else {
-                var_dump('asdfasdf');
                 // if email doesn't match an existing account, create new account
                 $this->createNewUser($mysqli, $table_prefix, $user, $service_db_id);
                 $sql = "SELECT ID,user_nicename,display_name FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
