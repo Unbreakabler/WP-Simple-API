@@ -125,10 +125,15 @@ $app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
 
 $app->group('/search', function() use ($app, $SearchHandler, $RequestHandler) {
 
-    $app->get('/:search_key', function($search_key) use ($app, $SearchHandler, $RequestHandler) {
-        $data = $SearchHandler->searchPosts(TABLE_PREFIX, $search_key);
-        $RequestHandler->sendJSONResponse($app, $data);
-    });
+  $app->get('/:search_key/:count', function($search_key, $count) use ($app, $SearchHandler, $RequestHandler) {
+      $data = $SearchHandler->searchPosts(TABLE_PREFIX, $search_key, $count);
+      $data = $SearchHandler->getSearchRecordCount(TABLE_PREFIX, $search_key, $data);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
+  $app->get('/:search_key/:count/:index', function($search_key, $count, $index) use ($app, $SearchHandler, $RequestHandler) {
+      $data = $SearchHandler->searchPosts(TABLE_PREFIX, $search_key, $count, $index);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
 
 });
 
