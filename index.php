@@ -121,8 +121,8 @@ $app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->get('/signup', function () use ($app, $UserHandler, $RequestHandler) {
-        $data = $UserHandler->userSignUp();
+    $app->post('/signup', function () use ($app, $UserHandler, $RequestHandler) {
+        $data = $UserHandler->userSignUp(TABLE_PREFIX);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 });

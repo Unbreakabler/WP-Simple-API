@@ -22,16 +22,18 @@ class UserAPI {
         return $hash;
     }
 
-    public function userSignUp() {
-        $username = 'jon';
-        $password = '1234';
+    public function userSignUp($table_prefix) {
+        header('Access-Control-Allow-Origin', '*');
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $username = $data['username'];
+        $password = $data['password'];
 
         $key = 'secret123';
         $token = array(
             "username" => $username,
-            "password" => $password,
-            "iat" => 1356999524,
-            "nbf" => 1357000000
+            "password" => $password
         );
         $jwt = JWT::encode($token, $key);
         return $jwt;
