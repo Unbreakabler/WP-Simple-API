@@ -11,11 +11,13 @@ require 'classes/post-class.php';
 require 'classes/requestsender-class.php';
 require 'classes/comment-class.php';
 require 'classes/user-class.php';
+require 'classes/search-class.php';
 
 $UserHandler = new UserAPI();
 $PostHandler = new PostAPI();
 $CommentHandler = new CommentAPI();
 $RequestHandler = new requestSender();
+$SearchHandler = new SearchAPI();
 
 //Creates a new mysqli connection to database
 function dbConnect($host = DB_HOST, $user = DB_USER, $password = DB_PASSWORD, $dbname = DB_NAME) {
@@ -125,6 +127,20 @@ $app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
         $data = $UserHandler->userSignUp(TABLE_PREFIX);
         $RequestHandler->sendJSONResponse($app, $data);
     });
+});
+
+$app->group('/search', function() use ($app, $SearchHandler, $RequestHandler) {
+
+  $app->get('/:search_key/:count', function($search_key, $count) use ($app, $SearchHandler, $RequestHandler) {
+      $data = $SearchHandler->searchPosts(TABLE_PREFIX, $search_key, $count);
+      $data = $SearchHandler->getSearchRecordCount(TABLE_PREFIX, $search_key, $data);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
+  $app->get('/:search_key/:count/:index', function($search_key, $count, $index) use ($app, $SearchHandler, $RequestHandler) {
+      $data = $SearchHandler->searchPosts(TABLE_PREFIX, $search_key, $count, $index);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
+
 });
 
 $app->run();
