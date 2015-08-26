@@ -2,7 +2,7 @@
 
 /** MySQL database name **/
 
-define('DB_NAME', 'kamloopsthisweek');
+define('DB_NAME', 'kamloops_wp');
 
 define('SITE_URL', 'http://www.kamloopsthisweek.com');
 

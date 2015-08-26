@@ -1,12 +1,13 @@
 <?php
-
+require './vendor/firebase/php-jwt/src/JWT.php';
+use \Firebase\JWT\JWT;
 class UserAPI {
 
-    private function getUserInfo($url) {
+    private function getUserFromURL($url, $token) {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL,
-            $url . $_GET['access_token'] . '&fields=id,first_name,last_name,email&format=json'
+            $url . $token . '&fields=id,first_name,last_name,email&format=json'
         );
         $content = curl_exec($ch);
         return json_decode($content);
@@ -19,6 +20,23 @@ class UserAPI {
         $salt = str_replace('+', '.', $salt);
         $hash = crypt($pass, '$P$B'.$salt.'$');
         return $hash;
+    }
+
+    public function userSignUp($table_prefix) {
+        header('Access-Control-Allow-Origin', '*');
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $username = $data['username'];
+        $password = $data['password'];
+
+        $key = 'secret123';
+        $token = array(
+            "username" => $username,
+            "password" => $password
+        );
+        $jwt = JWT::encode($token, $key);
+        return $jwt;
     }
 
     private function createNewUser($mysqli, $table_prefix, $user, $service_db_id) {
@@ -85,28 +103,22 @@ class UserAPI {
     public function getUserByToken($table_prefix) {
 
         // switch to query different restful APIs based on login_service the users access token came from
-        $service = $_GET['login_service'];
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $service = $data['login_service'];
+        $token = $data['access_token'];
 
         switch ($service) {
             case 'facebook':
-                $user = $this->getUserInfo('https://graph.facebook.com/v2.2/me/?access_token=');
+                $user = $this->getUserFromURL('https://graph.facebook.com/v2.2/me/?access_token=', $token);
                 $user->picture = 'https://graph.facebook.com/' . $user->id . '/picture?type=normal';
                 $service_db_id = 'xoouser_utlra_facebook_id';
                 # code...
                 break;
 
-            case 'twitter':
-                # code...
-                break;
-
-            case 'google':
-                # $user = $this->getUserInfo('')
-                # $user = $this->getUserInfo('https://accounts.google.com/o/oauth2/auth?response_type=token&scope=profile&redirect_uri=http://localhost/callback&client_id=396458382686-pg2fkuho35m7ck9bdmbo238glbq580gd.apps.googleusercontent.com');
-                # code...
-                break;
-
             default:
-                # code...
+                $user = $this->getUserFromServer($data);
                 break;
         }
 
@@ -129,7 +141,6 @@ class UserAPI {
                 }
 
             } else {
-                var_dump('asdfasdf');
                 // if email doesn't match an existing account, create new account
                 $this->createNewUser($mysqli, $table_prefix, $user, $service_db_id);
                 $sql = "SELECT ID,user_nicename,display_name FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
