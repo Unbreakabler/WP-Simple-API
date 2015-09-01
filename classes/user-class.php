@@ -13,6 +13,11 @@ class UserAPI {
         return json_decode($content);
     }
 
+    private function getUserFromServer($data) {
+        $password = $data['password'];
+        $username = $data['username'];
+    }
+
     private function randomPasswordGen() {
         $pass = bin2hex(openssl_random_pseudo_bytes(6));
         $salt = mcrypt_create_iv(22, MCRYPT_DEV_URANDOM);

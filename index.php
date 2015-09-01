@@ -1,5 +1,4 @@
 <?php
-
 //Framework for a simple RESTful API implementation
 require 'Slim/Slim/Slim.php';
 \Slim\Slim::registerAutoloader();
