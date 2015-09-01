@@ -1,16 +1,16 @@
 <?php
 //Framework for a simple RESTful API implementation
-require 'Slim/Slim/Slim.php';
+require_once('Slim/Slim/Slim.php');
 \Slim\Slim::registerAutoloader();
-use \Firebase\JWT\JWT;
 
 //Grabbing the DB credentials to acces the necessary SQL tables
-require 'config/config.php';
-require 'classes/post-class.php';
-require 'classes/requestsender-class.php';
-require 'classes/comment-class.php';
-require 'classes/user-class.php';
-require 'classes/search-class.php';
+require_once('config/config.php');
+require_once('classes/post-class.php');
+require_once('classes/requestsender-class.php');
+require_once('classes/comment-class.php');
+require_once('classes/user-class.php');
+require_once('classes/search-class.php');
+require_once('../ezadmin/wp-load.php');
 
 $UserHandler = new UserAPI();
 $PostHandler = new PostAPI();
@@ -143,5 +143,4 @@ $app->group('/search', function() use ($app, $SearchHandler, $RequestHandler) {
 });
 
 $app->run();
-
 ?>

@@ -1,6 +1,4 @@
 <?php
-require './vendor/firebase/php-jwt/src/JWT.php';
-use \Firebase\JWT\JWT;
 class UserAPI {
 
     private function getUserFromURL($url, $token) {
@@ -16,6 +14,28 @@ class UserAPI {
     private function getUserFromServer($data) {
         $password = $data['password'];
         $username = $data['username'];
+        $res = new stdClass();
+        $user = get_user_by( 'login', $username);
+        // If the username doesn't work, check to make sure they didn't try to login with their email instead of username
+        if (!$user) {
+            $user = get_user_by('email', $username);
+        }
+        if ( $user && wp_check_password( $password, $user->data->user_pass, $user->ID) ) {
+            @$res->data->display_name = $user->data->display_name;
+            @$res->data->ID = $user->data->ID;
+            @$res->data->user_email = $user->data->user_email;
+            @$res->data->user_nicename = $user->data->user_nicename;
+            return $res;
+        } else {
+            if ($user) {
+                @$res->data->error->password = true;
+                @$res->data->error->message = 'Password incorrect';
+            } else {
+                @$res->data->error->username = true;
+                @$res->data->error->message = 'Username does not exist';
+            }
+            return $res;
+        }
     }
 
     private function randomPasswordGen() {
@@ -32,41 +52,70 @@ class UserAPI {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
 
-        $username = $data['username'];
-        $password = $data['password'];
+        $mysqli = dbConnect();
+        $user = new stdClass();
+        $res = new stdClass();
 
-        $key = 'secret123';
-        $token = array(
-            "username" => $username,
-            "password" => $password
-        );
-        $jwt = JWT::encode($token, $key);
-        return $jwt;
+        $user->first_name = $data['first_name'];
+        $user->last_name = $data['last_name'];
+        $user->pass = $data['pass'];
+        $user->email = $data['email'];
+
+        // get_user_by login and email, if they exists do not allow the account to be created.
+        $creation = $this->createNewUser($mysqli, $table_prefix, $user, null);
+        unset($user->pass);
+
+        if (!$creation) {
+            $user = get_user_by('email', $user->email);
+            return $user->data;
+        } else {
+            return $creation;
+        }
     }
 
     private function createNewUser($mysqli, $table_prefix, $user, $service_db_id) {
-        $displayName = '';
         if (isset($user->first_name)) {
-            $displayName .= strtolower($user->first_name);
+            $userLogin .= strtolower($user->first_name);
         }
         if (isset($user->last_name)) {
-            $displayName .= strtolower($user->last_name);
+            $userLogin .= strtolower($user->last_name);
         }
 
-        // FIXME: Are there edge cases where the facebook API doesn't return a first or last name?
-        if (!$displayName) {
-            return;
+        if (!$userLogin) {
+            $userLogin = $user->email;
         }
 
+        $res = new stdClass();
 
-        //maximum length for a new accounts display name
-        $displayName = substr($displayName, 0, 32);
+        // if username or email is already in use, deny the creation
+        // TODO: Return detailed error messages to display client side
+        if (get_user_by('login', $userLogin) || get_user_by('slug', $userLogin)) {
 
-        $pass = $this->randomPasswordGen();
+            // This should never happen
+            if (get_user_by('email', $user->email)) {
+                @$res->error->registration = 'This email is already registered';
+                return $res;
+            }
+
+            $i = 1;
+            $newLogin = $userLogin . $i;
+            while (get_user_by('login', $newLogin)) {
+                $i++;
+                $newLogin = $userLogin . $i;
+            }
+            $userLogin = $newLogin;
+        }
+
+        if ($user->pass) {
+            $pass = wp_hash_password($user->pass);
+        } else {
+            // Create random password for users that login via facebook
+            $pass = wp_hash_password($this->randomPasswordGen());
+        }
         $time = date('Y-m-d H:i:s');
 
         $sql = "INSERT INTO `".$table_prefix."users` (user_login,user_pass,user_nicename,user_email,user_registered,display_name)
-        VALUES ('$displayName','$pass','$displayName','$user->email','$time','$user->first_name $user->last_name')";
+        VALUES ('$userLogin','$pass','$userLogin','$user->email','$time','$user->first_name $user->last_name')";
         //var_dump($sql);
 
         $mysqli->query($sql);
@@ -83,7 +132,7 @@ class UserAPI {
         // get created user_id in order to store meta data
 
         $sql = "INSERT INTO `".$table_prefix."usermeta` (user_id,meta_key,meta_value) VALUES
-        ($NEWUSERID,'nickname','$displayName'),
+        ($NEWUSERID,'nickname','$userLogin'),
         ($NEWUSERID,'first_name','$user->first_name $user->last_name'),
         ($NEWUSERID,'last_name',''),
         ($NEWUSERID,'description',''),
@@ -102,31 +151,11 @@ class UserAPI {
 
         $res = $mysqli->query($sql);
 
-        return 0;
+        return;
     }
 
-    public function getUserByToken($table_prefix) {
-
-        // switch to query different restful APIs based on login_service the users access token came from
-        $json = file_get_contents('php://input');
-        $data = json_decode($json, true);
-
-        $service = $data['login_service'];
-        $token = $data['access_token'];
-
-        switch ($service) {
-            case 'facebook':
-                $user = $this->getUserFromURL('https://graph.facebook.com/v2.2/me/?access_token=', $token);
-                $user->picture = 'https://graph.facebook.com/' . $user->id . '/picture?type=normal';
-                $service_db_id = 'xoouser_utlra_facebook_id';
-                # code...
-                break;
-
-            default:
-                $user = $this->getUserFromServer($data);
-                break;
-        }
-
+    // Get user information from the database based on the user information returned from facebook graph
+    private function getUserFromFacebookInfo($user, $service_db_id, $table_prefix) {
         $mysqli = dbConnect();
 
         $sql = "SELECT ID,user_nicename,display_name,user_email FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
@@ -147,7 +176,10 @@ class UserAPI {
 
             } else {
                 // if email doesn't match an existing account, create new account
-                $this->createNewUser($mysqli, $table_prefix, $user, $service_db_id);
+                $newUser = $this->createNewUser($mysqli, $table_prefix, $user, $service_db_id);
+                if ($newUser) {
+                    return $newUser;
+                }
                 $sql = "SELECT ID,user_nicename,display_name FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
                 $result = $mysqli->query($sql);
                 $res = $result->fetch_object();
@@ -156,6 +188,30 @@ class UserAPI {
         }
         $res->picture = $user->picture;
         return $res;
+    }
+
+    public function getUserByToken($table_prefix) {
+
+        // switch to query different restful APIs based on login_service the users access token came from
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $service = $data['login_service'];
+
+        switch ($service) {
+            case 'facebook':
+                $token = $data['access_token'];
+                $user = $this->getUserFromURL('https://graph.facebook.com/v2.2/me/?access_token=', $token);
+                $user->picture = 'https://graph.facebook.com/' . $user->id . '/picture?type=normal';
+                $service_db_id = 'xoouser_utlra_facebook_id';
+                $res = $this->getUserFromFacebookInfo($user, $service_db_id, $table_prefix);
+                return $res;
+                break;
+            case 'login':
+                $user = $this->getUserFromServer($data);
+                return $user->data;
+                break;
+        }
     }
 
 }
