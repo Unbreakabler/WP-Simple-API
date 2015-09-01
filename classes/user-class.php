@@ -64,16 +64,16 @@ class UserAPI {
         // get_user_by login and email, if they exists do not allow the account to be created.
         $creation = $this->createNewUser($mysqli, $table_prefix, $user, null);
         unset($user->pass);
-
         if (!$creation) {
             $user = get_user_by('email', $user->email);
             return $user->data;
         } else {
-            return $creation;
+            return $creation->data;
         }
     }
 
     private function createNewUser($mysqli, $table_prefix, $user, $service_db_id) {
+        $userLogin = '';
         if (isset($user->first_name)) {
             $userLogin .= strtolower($user->first_name);
         }
@@ -93,7 +93,8 @@ class UserAPI {
 
             // This should never happen
             if (get_user_by('email', $user->email)) {
-                @$res->error->registration = 'This email is already registered';
+                @$res->data->error->email = true;
+                @$res->data->error->message = 'This email is already registered';
                 return $res;
             }
 
@@ -144,7 +145,7 @@ class UserAPI {
         ($NEWUSERID,'$capabilities','a:1:{s:10:\"subscriber\";b:1;}'),
         ($NEWUSERID,'$user_level','0'),
         ($NEWUSERID,'xoouser_ultra_social_signup','$social_signup'),
-        ($NEWUSERID,'$service_db_id','$user->id'),
+        ($NEWUSERID,'$service_db_id','$NEWUSERID'),
         ($NEWUSERID,'usersutlra_account_status','active'),
         ($NEWUSERID,'session_tokens',''),
         ($NEWUSERID,'uultra_last_login','$time')";
