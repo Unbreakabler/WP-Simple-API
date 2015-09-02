@@ -128,7 +128,7 @@ $app->group('/user', function () use ($app, $UserHandler, $RequestHandler) {
     });
 });
 
-$app->group('/appsearch', function() use ($app, $SearchHandler, $RequestHandler) {
+$app->group('/appsch', function() use ($app, $SearchHandler, $RequestHandler) {
 
   $app->get('/:search_key/:count', function($search_key, $count) use ($app, $SearchHandler, $RequestHandler) {
       $data = $SearchHandler->searchPosts(TABLE_PREFIX, $search_key, $count);
