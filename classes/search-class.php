@@ -5,7 +5,7 @@
 class SearchAPI {
 
   public function searchPosts($table_prefix, $searchKey, $count = 10, $index = 0) {
-      header('Access-Control-Allow-Origin', '*');
+      //header('Access-Control-Allow-Origin', '*');
 
       // parse search string:
 
