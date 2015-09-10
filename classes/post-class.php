@@ -249,6 +249,7 @@ class PostAPI {
                         if ($newresult = $mysqli->query($sql)) {
                             while ($row = $newresult->fetch_object()) {
                                 $path_parts = pathinfo($row->guid);
+                                $post->thumbnail = $path_parts['dirname'] . '/' . $path_parts['filename'] .'.'. $path_parts['extension'];
                                 $post->thumbnailURI = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-300x160.' . $path_parts['extension'];
                                 $post->thumbnailURI70 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-70x70.' . $path_parts['extension'];
                                 $post->thumbnailURI150 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-150x150.' . $path_parts['extension'];
@@ -261,6 +262,30 @@ class PostAPI {
                     }
                 }
             }
+
+            $sql = "SELECT * FROM ".$table_prefix."postmeta
+                    WHERE post_id = $post->ID
+                    AND meta_key = 'wpcf-first-name'";
+            //detect if post type is an obit
+            if ($result = $mysqli->query($sql)) {
+                //if post type is obit, pull all meta data for that post_type
+                $sql = "SELECT * FROM ".$table_prefix."postmeta
+                      WHERE post_id = $post->ID";
+                $result = $mysqli->query($sql);
+                foreach ($result as $obj) {
+                  // for each meta key add to the object output
+                  $lable  = str_replace('-', "_", $obj['meta_key']);
+                  if ($lable == 'wpcf_deathdate') {
+                      $newDatetime = date('F j, Y', (int)$obj['meta_value']);
+                      //$newDatetime = $newDatetime->format('F j, Y, g:i a');
+                      $post->$lable = $newDatetime;
+                  } else {
+                      $post->$lable = $obj['meta_value'];
+                  }
+                } // end for each loop
+            } // ends if
+
+
             //Appends the real name of the author to each post object
             $sql = "SELECT `display_name`FROM `".$table_prefix."users` WHERE `ID` = $post->post_author";
             if ($result = $mysqli->query($sql)) {

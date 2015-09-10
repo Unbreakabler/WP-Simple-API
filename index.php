@@ -10,6 +10,7 @@ require_once('classes/requestsender-class.php');
 require_once('classes/comment-class.php');
 require_once('classes/user-class.php');
 require_once('classes/search-class.php');
+require_once('classes/obits-class.php');
 require_once('../ezadmin/wp-load.php');
 
 $UserHandler = new UserAPI();
@@ -17,6 +18,7 @@ $PostHandler = new PostAPI();
 $CommentHandler = new CommentAPI();
 $RequestHandler = new requestSender();
 $SearchHandler = new SearchAPI();
+$ObitsHandler = new ObitsAPI();
 
 //Creates a new mysqli connection to database
 function dbConnect($host = DB_HOST, $user = DB_USER, $password = DB_PASSWORD, $dbname = DB_NAME) {
@@ -141,6 +143,37 @@ $app->group('/appsch', function() use ($app, $SearchHandler, $RequestHandler) {
   });
 
 });
+
+$app->group('/obits', function() use ($app, $ObitsHandler, $PostHandler, $RequestHandler) {
+
+  $app->get('/:count', function($count) use ($app, $ObitsHandler, $PostHandler, $RequestHandler) {
+      $data = $ObitsHandler->getObits(TABLE_PREFIX, $count);
+      $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
+  $app->get('/:count/:index', function($count, $index) use ($app, $ObitsHandler, $PostHandler, $RequestHandler) {
+      $data = $ObitsHandler->getObits(TABLE_PREFIX, $count, $index);
+      $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
+  $app->get('/:count/:post_id/byid', function($count, $post_id) use ($app, $ObitsHandler, $PostHandler, $RequestHandler) {
+      $data = $ObitsHandler->getObitsByID(TABLE_PREFIX, $post_id);
+      $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
+  $app->get('/:count/:post_id/obnext', function($count, $post_id) use ($app, $ObitsHandler, $PostHandler, $RequestHandler) {
+      $data = $ObitsHandler->getNextObitByID(TABLE_PREFIX, $post_id);
+      $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
+  $app->get('/:count/:post_id/obprev', function($count, $post_id) use ($app, $ObitsHandler, $PostHandler, $RequestHandler) {
+      $data = $ObitsHandler->getPreviousObitByID(TABLE_PREFIX, $post_id);
+      $data = $PostHandler->getPostMetaData(TABLE_PREFIX, $data);
+      $RequestHandler->sendJSONResponse($app, $data);
+  });
+
+});
+
 
 $app->run();
 ?>
