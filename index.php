@@ -77,28 +77,31 @@ $app->group('/trending', function () use ($app, $PostHandler, $RequestHandler, $
     });
 });
 
-$app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
+$app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $RequestHandler, $AuthHandler) {
 
-    //Get all comments for current post_id
-    $app->get('/:post_id', function ($post_id) use ($app, $PostHandler, $CommentHandler, $RequestHandler) {
-        $data = $CommentHandler->getCommentsByPostID(TABLE_PREFIX, $post_id);
+    $app->post('/', function () use ($app, $CommentHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $data = $CommentHandler->refactoredUpdateCommentKarma();
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->post('/', function () use ($app, $CommentHandler, $RequestHandler) {
-        $data = $CommentHandler->refactoredUpdateCommentKarma(TABLE_PREFIX);
+    $app->post('/get', function () use ($app, $PostHandler, $CommentHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $data = $CommentHandler->getCommentsByPostID();
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->post('/response', function () use ($app, $CommentHandler, $RequestHandler) {
-        $new_id = $CommentHandler->setCommentResponse(TABLE_PREFIX);
-        $data = $CommentHandler->getCommentsByID(TABLE_PREFIX, $new_id);
+    $app->post('/response', function () use ($app, $CommentHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $new_id = $CommentHandler->setCommentResponse();
+        $data = $CommentHandler->getCommentsByID($new_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->post('/new', function () use ($app, $CommentHandler, $RequestHandler) {
-        $new_id = $CommentHandler->setNewComment(TABLE_PREFIX);
-        $data = $CommentHandler->getCommentsByID(TABLE_PREFIX, $new_id);
+    $app->post('/new', function () use ($app, $CommentHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $new_id = $CommentHandler->setNewComment();
+        $data = $CommentHandler->getCommentsByID($new_id);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
@@ -113,22 +116,26 @@ $app->group('/user', function () use ($app, $UserHandler, $RequestHandler, $Auth
         $RequestHandler->sendJSONResponse($app, $data);
     });
 
-    $app->post('/signup', function () use ($app, $UserHandler, $RequestHandler) {
+    $app->post('/signup', function () use ($app, $UserHandler, $RequestHandler, $AuthHandler) {
         $AuthHandler->authorizeToken();
         $data = $UserHandler->userSignUp();
         $RequestHandler->sendJSONResponse($app, $data);
     });
 });
 
-$app->group('/search', function() use ($app, $SearchHandler, $RequestHandler) {
+$app->group('/search', function() use ($app, $SearchHandler, $RequestHandler, $AuthHandler) {
 
-    $app->get('/:search_key/:count', function($search_key, $count) use ($app, $SearchHandler, $RequestHandler) {
-        $data = $SearchHandler->searchPosts($search_key, $count);
-        $data = $SearchHandler->getSearchRecordCount($search_key, $data);
+    $app->post('/', function() use ($app, $SearchHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $data = $SearchHandler->searchPosts();
+        $data = $SearchHandler->getSearchRecordCount($data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
-    $app->get('/:search_key/:count/:index', function($search_key, $count, $index) use ($app, $SearchHandler, $RequestHandler) {
-        $data = $SearchHandler->searchPosts($search_key, $count, $index);
+
+    $app->post('/more', function() use ($app, $SearchHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $data = $SearchHandler->searchPosts();
+        $data = $SearchHandler->getSearchRecordCount($data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 });

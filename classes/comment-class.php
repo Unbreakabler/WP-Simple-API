@@ -59,11 +59,15 @@ class CommentAPI {
     /**
     *   Returns a structured list of comments for a post based on the passed in Post ID
     */
-    public function getCommentsByPostID($table_prefix, $post_id) {
+    public function getCommentsByPostID() {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $post_id = $data['post_id'];
         $mysqli = dbConnect();
 
         $sql = "SELECT comment_ID,comment_author,comment_author_email,comment_approved,comment_date,comment_content,comment_karma,comment_parent
-                FROM `".$table_prefix."comments` WHERE `comment_post_ID` = $post_id";
+                FROM `".TABLE_PREFIX."comments` WHERE `comment_post_ID` = $post_id";
         if ($result = $mysqli->query($sql)) {
             while ($row = $result->fetch_object()) {
 
@@ -74,7 +78,7 @@ class CommentAPI {
         }
 
         if (isset($resultArr)) {
-            $comments = $this->getCommentMetaData($table_prefix, $mysqli, $resultArr);
+            $comments = $this->getCommentMetaData(TABLE_PREFIX, $mysqli, $resultArr);
             $comments = $this->buildCommentStructure($comments);
             return $comments;
         } else {
@@ -90,11 +94,11 @@ class CommentAPI {
     *   Returns a structured list of comments for a post based on the passed in comment ID
     *   Used to return the comment object created when a user submits a new comment
     */
-    public function getCommentsByID($table_prefix, $comment_id) {
+    public function getCommentsByID($comment_id) {
         $mysqli = dbConnect();
 
         $sql = "SELECT comment_ID,comment_author,comment_author_email,comment_approved,comment_date,comment_content,comment_karma,comment_parent
-                FROM `".$table_prefix."comments` WHERE `comment_ID` = $comment_id";
+                FROM `".TABLE_PREFIX."comments` WHERE `comment_ID` = $comment_id";
         if ($result = $mysqli->query($sql)) {
             return $result->fetch_object();
         }
@@ -144,7 +148,7 @@ class CommentAPI {
         return $new_id;
     }
 
-    public function setNewComment($table_prefix) {
+    public function setNewComment() {
         $mysqli = dbConnect();
 
         $json = file_get_contents('php://input');
@@ -154,7 +158,7 @@ class CommentAPI {
         $comment_approved = 0;
 
         // Check if user is in whitelist
-        $sql = "SELECT option_value FROM ".$table_prefix."options WHERE option_name = 'whitelist_keys'";
+        $sql = "SELECT option_value FROM ".TABLE_PREFIX."options WHERE option_name = 'whitelist_keys'";
 
         if ($result = $mysqli->query($sql)) {
             $whitelist = $result->fetch_array();
@@ -169,7 +173,7 @@ class CommentAPI {
         }
 
         // Insert comment into the comments table
-        $stmt = $mysqli->prepare("INSERT INTO ".$table_prefix."comments (comment_post_ID,comment_author,comment_author_email,comment_date,comment_date_gmt,comment_content,comment_approved,user_id) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt = $mysqli->prepare("INSERT INTO ".TABLE_PREFIX."comments (comment_post_ID,comment_author,comment_author_email,comment_date,comment_date_gmt,comment_content,comment_approved,user_id) VALUES (?,?,?,?,?,?,?,?)");
         $stmt->bind_param('isssssii', $data['comment_post_ID'], $data['comment_author'], $data['comment_author_email'], $comment_date, $comment_date_gmt, $data['comment_content'], $comment_approved, $data['user_id']);
         $stmt->execute();
         printf($stmt->error);
@@ -177,7 +181,7 @@ class CommentAPI {
 
         // Increment comment_count on post when new comment is added
         if ($stmt->affected_rows > 0) {
-            $sql = "UPDATE `".$table_prefix."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
+            $sql = "UPDATE `".TABLE_PREFIX."posts` SET `comment_count` = `comment_count` + 1 WHERE `ID` = ".$data['comment_post_ID'];
             $mysqli->query($sql);
         }
         $stmt->close();
@@ -189,7 +193,7 @@ class CommentAPI {
     /**
     *
     */
-    public function refactoredUpdateCommentKarma($table_prefix) {
+    public function refactoredUpdateCommentKarma() {
         $mysqli = dbConnect();
 
         $json = file_get_contents('php://input');
@@ -205,11 +209,11 @@ class CommentAPI {
         // Check is user is logged input
         if ($userid !== '') {
 
-            $sql = "SELECT comment_karma FROM ".$table_prefix."comments WHERE comment_ID=".$comment_id;
+            $sql = "SELECT comment_karma FROM ".TABLE_PREFIX."comments WHERE comment_ID=".$comment_id;
             $result = $mysqli->query($sql);
             $commentKarma = $result->fetch_array();
 
-            $sql = "SELECT * FROM `".$table_prefix."commentmeta` WHERE comment_ID=$comment_id AND meta_key='vote'";
+            $sql = "SELECT * FROM `".TABLE_PREFIX."commentmeta` WHERE comment_ID=$comment_id AND meta_key='vote'";
             $result = $mysqli->query($sql);
             $commentVotes = $result->fetch_array();
             $get_vote_value = json_decode($commentVotes['meta_value']);
@@ -221,23 +225,23 @@ class CommentAPI {
                     $vote_value->votedown = 0;
                     $vote_value->voteup_user = array($userid);
                     $vote_value->votedown_user = array();
-                    $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                    $newKarma = $this->update_karma($mysqli, TABLE_PREFIX, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
                 } else {
                     $vote_value->voteup = 0;
                     $vote_value->votedown = 1;
                     $vote_value->voteup_user = array();
                     $vote_value->votedown_user = array($userid);
-                    $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                    $newKarma = $this->update_karma($mysqli, TABLE_PREFIX, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
                 }
                 $vote_value = json_encode($vote_value);
-                $query = "insert into `".$table_prefix."commentmeta` (comment_id, meta_key, meta_value) values('" . $comment_id ."', 'vote', '". $vote_value ."')";
+                $query = "insert into `".TABLE_PREFIX."commentmeta` (comment_id, meta_key, meta_value) values('" . $comment_id ."', 'vote', '". $vote_value ."')";
                 $mysqli->query($query);
                 $output = 1;
             } else {
                 //get current vote count
                 if ($vote == "voteup") {
                     if (in_array($userid, $get_vote_value->votedown_user)) {
-                        $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                        $newKarma = $this->update_karma($mysqli, TABLE_PREFIX, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
                         $new_data = $this->change_user_vote($userid, $vote, $get_vote_value->voteup_user, $get_vote_value->votedown_user, $get_vote_value->voteup, $get_vote_value->votedown);
                         unset($get_vote_value->voteup_user);
                         unset($get_vote_value->votedown_user);
@@ -255,15 +259,15 @@ class CommentAPI {
                         $voteup_user_array = $get_vote_value->voteup_user;
                         $voteup_user_array[] = $userid;
                         $get_vote_value->voteup_user = $voteup_user_array;
-                        $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                        $newKarma = $this->update_karma($mysqli, TABLE_PREFIX, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
                         $output = $get_vote_value->voteup;
                     }//ends if for pre-vote
                     $vote_value_update = json_encode($get_vote_value);
-                    $query = "UPDATE `".$table_prefix."commentmeta` SET meta_value = '". $vote_value_update ."' WHERE comment_id = '" . $comment_id . "' AND meta_key ='vote'";
+                    $query = "UPDATE `".TABLE_PREFIX."commentmeta` SET meta_value = '". $vote_value_update ."' WHERE comment_id = '" . $comment_id . "' AND meta_key ='vote'";
                     $mysqli->query($query);
                 } else if ($vote == "votedown") {
                     if (in_array($userid, $get_vote_value->voteup_user))  {
-                        $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                        $newKarma = $this->update_karma($mysqli, TABLE_PREFIX, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
                         $new_data = $this->change_user_vote($userid, $vote, $get_vote_value->voteup_user, $get_vote_value->votedown_user, $get_vote_value->voteup, $get_vote_value->votedown);
                         unset($get_vote_value->voteup_user);
                         unset($get_vote_value->votedown_user);
@@ -281,11 +285,11 @@ class CommentAPI {
                         $votedown_user_array = $get_vote_value->votedown_user;
                         $votedown_user_array[] = $userid;
                         $get_vote_value->votedown_user = $votedown_user_array;
-                        $newKarma = $this->update_karma($mysqli, $table_prefix, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
+                        $newKarma = $this->update_karma($mysqli, TABLE_PREFIX, $vote, $commentKarma, $comment_id, $get_vote_value, $userid);
                         $output = $get_vote_value->votedown;
                     }
                     $vote_value_update = json_encode($get_vote_value);
-                    $query = "UPDATE `".$table_prefix."commentmeta` SET meta_value = '". $vote_value_update ."' WHERE comment_id = '" . $comment_id . "' AND meta_key ='vote'";
+                    $query = "UPDATE `".TABLE_PREFIX."commentmeta` SET meta_value = '". $vote_value_update ."' WHERE comment_id = '" . $comment_id . "' AND meta_key ='vote'";
                     $mysqli->query($query);
                 } //ends if
             } //ends for each
