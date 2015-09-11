@@ -103,7 +103,6 @@ class CommentAPI {
     }
 
     public function setCommentResponse($table_prefix) {
-        header('Access-Control-Allow-Origin', '*');
         $mysqli = dbConnect();
 
         $json = file_get_contents('php://input');
@@ -146,7 +145,6 @@ class CommentAPI {
     }
 
     public function setNewComment($table_prefix) {
-        header('Access-Control-Allow-Origin', '*');
         $mysqli = dbConnect();
 
         $json = file_get_contents('php://input');
@@ -192,7 +190,6 @@ class CommentAPI {
     *
     */
     public function refactoredUpdateCommentKarma($table_prefix) {
-        header('Access-Control-Allow-Origin', '*');
         $mysqli = dbConnect();
 
         $json = file_get_contents('php://input');

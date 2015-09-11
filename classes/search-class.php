@@ -1,7 +1,5 @@
 <?php
 
-
-
 class SearchAPI {
 
   public function searchPosts($table_prefix, $searchKey, $count = 10, $index = 0) {
@@ -164,8 +162,5 @@ class SearchAPI {
 
   }
 
-
 }
-
-
 ?>
