@@ -56,9 +56,10 @@ $app->group('/post', function() use ($app, $PostHandler, $RequestHandler, $AuthH
     });
 });
 
-$app->group('/gallery', function () use ($app, $PostHandler, $RequestHandler) {
+$app->group('/gallery', function () use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
 
-    $app->post('/', function () use ($app, $PostHandler, $RequestHandler) {
+    $app->post('/', function () use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
         $data = $PostHandler->getGalleryMeta();
         $data = $PostHandler->buildGalleryLinks($data);
         $RequestHandler->sendJSONResponse($app, $data);
@@ -66,9 +67,10 @@ $app->group('/gallery', function () use ($app, $PostHandler, $RequestHandler) {
 
 });
 
-$app->group('/trending', function () use ($app, $PostHandler, $RequestHandler) {
+$app->group('/trending', function () use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
 
-    $app->get('', function () use ($app, $PostHandler, $RequestHandler) {
+    $app->post('/', function () use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
         $data = $PostHandler->getTrendingStories();
         $data = $PostHandler->getPostMetaData($data);
         $RequestHandler->sendJSONResponse($app, $data);
