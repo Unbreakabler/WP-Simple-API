@@ -84,23 +84,10 @@ class PostAPI {
     public function getRecentPostsByCategory($term_id = 2, $count = 5, $index = 0) {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
-        if (isset($data['category_id'])) {
-            $term_id = $data['category_id'];
-        } else {
-            $term_id = 2;
-        }
 
-        if (isset($data['count'])) {
-            $count = $data['count'];
-        } else {
-            $count = 5;
-        }
-
-        if (isset($data['index'])) {
-            $index = $data['index'];
-        } else {
-            $index = 0;
-        }
+        $term_id = (isset($data['category_id']) ? $data['category_id'] : 2);
+        $count = (isset($data['count']) ? $data['count'] : 5);
+        $index = (isset($data['index']) ? $data['index'] : 0);
 
         $mysqli = dbConnect();
 
@@ -125,7 +112,7 @@ class PostAPI {
         }
         // Append the category id as the last item of the array, need to send the category id along with the array to
         // the getPostMetaData function
-        $resultArray[] = $term_id;
+        //$resultArray[] = $term_id;
         $mysqli->close();
         return $resultArray;
     }
@@ -162,7 +149,12 @@ class PostAPI {
         return $resultField;
     }
 
-    public function getPostByID($post_id) {
+    public function getPostByID() {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $post_id = $data['post_id'];
+
         $mysqli = dbConnect();
 
         $sql = "UPDATE ".TABLE_PREFIX."postmeta
@@ -211,7 +203,27 @@ class PostAPI {
         return $finalResult;
     }
 
-    public function getPreviousPostByID($post_id, $term_id) {
+    public function getPostByType() {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        if ($data['type'] == '') {
+            $res = $this->getPostByID();
+        } else if ($data['type'] == 'prev') {
+            $res = $this->getPreviousPostByID();
+        } else {
+            $res = $this->getNextPostByID();
+        }
+        return $res;
+    }
+
+    public function getPreviousPostByID() {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $post_id = $data['post_id'];
+        $term_id = $data['category_id'];
+
         $mysqli = dbConnect();
 
         $indexDate = $this->findIndexDate($post_id, $mysqli);
@@ -241,7 +253,13 @@ class PostAPI {
     }
 
     // TODO: If previous post doesn't exist return an error string instead of causing application Error
-    public function getNextPostByID($post_id, $term_id) {
+    public function getNextPostByID() {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $post_id = $data['post_id'];
+        $term_id = $data['category_id'];
+
         $mysqli = dbConnect();
 
         $indexDate = $this->findIndexDate($post_id, $mysqli);
@@ -268,7 +286,12 @@ class PostAPI {
     }
 
     // FIXME: Getting called 5 times on initial page load (view count is increasing by 5 when called from app)
-    public function getPostMetaData($posts, $category_id = 0) {
+    public function getPostMetaData($posts) {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $category_id = (isset($data['category_id']) ? $data['category_id'] : 0);
+
         $mysqli = dbConnect();
 
         foreach ($posts as $post) {

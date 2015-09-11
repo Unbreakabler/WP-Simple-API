@@ -38,35 +38,22 @@ $app->group('/category', function () use ($app, $PostHandler, $RequestHandler, $
     $app->post('/', function() use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
         $AuthHandler->authorizeToken();
         $postArray = $PostHandler->getRecentPostsByCategory();
-        $catId = array_pop($postArray);
+        //$catId = array_pop($postArray);
         $postListArray = $PostHandler->getPostListByID($postArray);
-        $data = $PostHandler->getPostMetaData($postListArray, $catId);
+        $data = $PostHandler->getPostMetaData($postListArray);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 });
 
-$app->group('/post', function() use ($app, $PostHandler, $RequestHandler) {
+$app->group('/post', function() use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
 
-    //TODO: Implement grabbing the post purely by ID, 'category_id' (Category) is only required for next/prev
-
-    $app->get('/:category_id/:post_id', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
-        $data = $PostHandler->getPostByID($post_id);
+    $app->post('/', function() use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $data = $PostHandler->getPostByType();
+        //$data = $PostHandler->getPostByID();
         $data = $PostHandler->getPostMetaData($data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
-
-    $app->get('/:category_id/:post_id/prev', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
-        $data = $PostHandler->getPreviousPostByID($post_id, $category_id);
-        $data = $PostHandler->getPostMetaData($data);
-        $RequestHandler->sendJSONResponse($app, $data);
-    });
-
-    $app->get('/:category_id/:post_id/next', function($category_id, $post_id) use ($app, $PostHandler, $RequestHandler) {
-        $data = $PostHandler->getNextPostByID($post_id, $category_id);
-        $data = $PostHandler->getPostMetaData($data);
-        $RequestHandler->sendJSONResponse($app, $data);
-    });
-
 });
 
 $app->group('/gallery', function () use ($app, $PostHandler, $RequestHandler) {
