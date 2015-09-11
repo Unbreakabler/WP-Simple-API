@@ -33,26 +33,14 @@ function dbConnect($host = DB_HOST, $user = DB_USER, $password = DB_PASSWORD, $d
 
 $app = new \Slim\Slim();
 
-$app->group('/category', function () use ($app, $PostHandler, $RequestHandler) {
+$app->group('/category', function () use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
 
-    $app->get('/:category_id', function($category_id) use ($app, $PostHandler, $RequestHandler) {
-        $postArray = $PostHandler->getRecentPostsByCategory($category_id);
+    $app->post('/', function() use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $postArray = $PostHandler->getRecentPostsByCategory();
+        $catId = array_pop($postArray);
         $postListArray = $PostHandler->getPostListByID($postArray);
-        $data = $PostHandler->getPostMetaData($postListArray, $category_id);
-        $RequestHandler->sendJSONResponse($app, $data);
-    });
-
-    $app->get ('/:category_id/:count', function($category_id,$count) use ($app, $PostHandler, $RequestHandler) {
-        $postArray = $PostHandler->getRecentPostsByCategory($category_id, $count);
-        $postListArray = $PostHandler->getPostListByID($postArray);
-        $data = $PostHandler->getPostMetaData($postListArray, $category_id);
-        $RequestHandler->sendJSONResponse($app, $data);
-    });
-
-    $app->get ('/:category_id/:count/:index', function($category_id, $count, $index) use ($app, $PostHandler, $RequestHandler) {
-        $postArray = $PostHandler->getRecentPostsByCategory($category_id, $count, $index);
-        $postListArray = $PostHandler->getPostListByID($postArray);
-        $data = $PostHandler->getPostMetaData($postListArray, $category_id);
+        $data = $PostHandler->getPostMetaData($postListArray, $catId);
         $RequestHandler->sendJSONResponse($app, $data);
     });
 });
@@ -127,6 +115,8 @@ $app->group('/comments', function() use ($app, $PostHandler, $CommentHandler, $R
 
 });
 
+
+// Basic authentication in place
 $app->group('/user', function () use ($app, $UserHandler, $RequestHandler, $AuthHandler) {
     $app->post('/', function () use ($app, $UserHandler, $RequestHandler, $AuthHandler) {
         $AuthHandler->authorizeToken();

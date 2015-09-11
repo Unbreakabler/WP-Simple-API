@@ -82,6 +82,26 @@ class PostAPI {
     }
 
     public function getRecentPostsByCategory($term_id = 2, $count = 5, $index = 0) {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+        if (isset($data['category_id'])) {
+            $term_id = $data['category_id'];
+        } else {
+            $term_id = 2;
+        }
+
+        if (isset($data['count'])) {
+            $count = $data['count'];
+        } else {
+            $count = 5;
+        }
+
+        if (isset($data['index'])) {
+            $index = $data['index'];
+        } else {
+            $index = 0;
+        }
+
         $mysqli = dbConnect();
 
         $indexDate = $this->setIndexDate($index, $mysqli);
@@ -103,7 +123,9 @@ class PostAPI {
                 $resultArray[] = $row;
             }
         }
-
+        // Append the category id as the last item of the array, need to send the category id along with the array to
+        // the getPostMetaData function
+        $resultArray[] = $term_id;
         $mysqli->close();
         return $resultArray;
     }
