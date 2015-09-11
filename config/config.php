@@ -23,6 +23,7 @@ define('VIEW_METAKEY', 'tie_views');
 define('FEATURED_TERM_ID', '2');
 define('DEFAULT_TERM_ID', '5');
 
+define('SECURE_TOKEN', '1234567890');
 
 define('DEFAULT_POST_IMAGE', 'http://www.kamloopsthisweek.com/wp-content/uploads/2014/09/NEWS-HEADER-2-300x150.jpg');
 define('DEFAULT_POST_IMAGE70', 'http://www.kamloopsthisweek.com/wp-content/uploads/2014/09/NEWS-HEADER-2-70x70.jpg');

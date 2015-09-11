@@ -47,7 +47,7 @@ class UserAPI {
         return $hash;
     }
 
-    public function userSignUp($table_prefix) {
+    public function userSignUp() {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
 
@@ -61,7 +61,7 @@ class UserAPI {
         $user->email = $data['email'];
 
         // get_user_by login and email, if they exists do not allow the account to be created.
-        $creation = $this->createNewUser($mysqli, $table_prefix, $user, null);
+        $creation = $this->createNewUser($mysqli, TABLE_PREFIX, $user, null);
         unset($user->pass);
         if (!$creation) {
             $user = get_user_by('email', $user->email);
@@ -71,7 +71,7 @@ class UserAPI {
         }
     }
 
-    private function createNewUser($mysqli, $table_prefix, $user, $service_db_id) {
+    private function createNewUser($mysqli, $user, $service_db_id) {
         $userLogin = '';
         if (isset($user->first_name)) {
             $userLogin .= strtolower($user->first_name);
@@ -114,7 +114,7 @@ class UserAPI {
         }
         $time = date('Y-m-d H:i:s');
 
-        $sql = "INSERT INTO `".$table_prefix."users` (user_login,user_pass,user_nicename,user_email,user_registered,display_name)
+        $sql = "INSERT INTO `".TABLE_PREFIX."users` (user_login,user_pass,user_nicename,user_email,user_registered,display_name)
         VALUES ('$userLogin','$pass','$userLogin','$user->email','$time','$user->first_name $user->last_name')";
         //var_dump($sql);
 
@@ -122,8 +122,8 @@ class UserAPI {
 
         $NEWUSERID = $mysqli->insert_id;
 
-        $capabilities = $table_prefix.'capabilities';
-        $user_level = $table_prefix.'user_level';
+        $capabilities = TABLE_PREFIX.'capabilities';
+        $user_level = TABLE_PREFIX.'user_level';
         if ($service_db_id) {
             $social_signup = 1;
         } else {
@@ -131,7 +131,7 @@ class UserAPI {
         }
         // get created user_id in order to store meta data
 
-        $sql = "INSERT INTO `".$table_prefix."usermeta` (user_id,meta_key,meta_value) VALUES
+        $sql = "INSERT INTO `".TABLE_PREFIX."usermeta` (user_id,meta_key,meta_value) VALUES
         ($NEWUSERID,'nickname','$userLogin'),
         ($NEWUSERID,'first_name','$user->first_name $user->last_name'),
         ($NEWUSERID,'last_name',''),
@@ -155,20 +155,20 @@ class UserAPI {
     }
 
     // Get user information from the database based on the user information returned from facebook graph
-    private function getUserFromFacebookInfo($user, $service_db_id, $table_prefix) {
+    private function getUserFromFacebookInfo($user, $service_db_id) {
         $mysqli = dbConnect();
 
-        $sql = "SELECT ID,user_nicename,display_name,user_email FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
+        $sql = "SELECT ID,user_nicename,display_name,user_email FROM `".TABLE_PREFIX."users` WHERE `user_email` = '$user->email'";
 
         if ($result = $mysqli->query($sql)) {
             if ($res = $result->fetch_object()) {
                 unset($res->user_pass);
                 // If user exists, find if the user has logged in with the current service before
-                $sql = "SELECT meta_value FROM `".$table_prefix."usermeta` WHERE `meta_key` = '$service_db_id' AND `user_id` = $res->ID";
+                $sql = "SELECT meta_value FROM `".TABLE_PREFIX."usermeta` WHERE `meta_key` = '$service_db_id' AND `user_id` = $res->ID";
                 // if they haven't, add it to the usermeta table
                 if ($result = $mysqli->query($sql)) {
                     if (!$result->fetch_object()) {
-                        $sql = "INSERT INTO `".$table_prefix."usermeta` (user_id,meta_key,meta_value)
+                        $sql = "INSERT INTO `".TABLE_PREFIX."usermeta` (user_id,meta_key,meta_value)
                         VALUES ('$res->ID','$service_db_id','$user->id')";
                         $result = $mysqli->query($sql);
                     }
@@ -176,11 +176,11 @@ class UserAPI {
 
             } else {
                 // if email doesn't match an existing account, create new account
-                $newUser = $this->createNewUser($mysqli, $table_prefix, $user, $service_db_id);
+                $newUser = $this->createNewUser($mysqli, TABLE_PREFIX, $user, $service_db_id);
                 if ($newUser) {
                     return $newUser;
                 }
-                $sql = "SELECT ID,user_nicename,display_name FROM `".$table_prefix."users` WHERE `user_email` = '$user->email'";
+                $sql = "SELECT ID,user_nicename,display_name FROM `".TABLE_PREFIX."users` WHERE `user_email` = '$user->email'";
                 $result = $mysqli->query($sql);
                 $res = $result->fetch_object();
                 unset($res->user_pass);
@@ -190,7 +190,7 @@ class UserAPI {
         return $res;
     }
 
-    public function getUserByToken($table_prefix) {
+    public function getUserByToken() {
 
         // switch to query different restful APIs based on login_service the users access token came from
         $json = file_get_contents('php://input');
@@ -204,7 +204,7 @@ class UserAPI {
                 $user = $this->getUserFromURL('https://graph.facebook.com/v2.2/me/?access_token=', $token);
                 $user->picture = 'https://graph.facebook.com/' . $user->id . '/picture?type=normal';
                 $service_db_id = 'xoouser_utlra_facebook_id';
-                $res = $this->getUserFromFacebookInfo($user, $service_db_id, $table_prefix);
+                $res = $this->getUserFromFacebookInfo($user, $service_db_id, TABLE_PREFIX);
                 return $res;
                 break;
             case 'login':
