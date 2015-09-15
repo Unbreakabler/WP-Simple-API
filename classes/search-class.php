@@ -55,7 +55,6 @@ class SearchAPI {
 
         $count = $result->fetch_object();
         $count->search = $search_result;
-        $count->sql = $sql;
         $mysqli->close();
 
         return $count;

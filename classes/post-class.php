@@ -177,6 +177,7 @@ class PostAPI {
     public function getTrendingStories() {
         $mysqli = dbConnect();
 
+        //TODO: Change the 700 days to 3-4 days before pushing live
         $indexDate = date('Y-m-d H:i:s', strtotime('-700 days'));
 
         $sql = "SELECT *
@@ -209,9 +210,9 @@ class PostAPI {
 
         if ($data['type'] == '') {
             $res = $this->getPostByID();
-        } else if ($data['type'] == 'prev') {
+        } else if ($data['type'] == '/prev') {
             $res = $this->getPreviousPostByID();
-        } else {
+        } else if ($data['type'] == '/next'){
             $res = $this->getNextPostByID();
         }
         return $res;
@@ -246,13 +247,10 @@ class PostAPI {
             }
         }
         $mysqli->close();
-        // if (!isset($finalResult)) {
-        //     $finalResult = array("error" => true, "MessageFormatter" => null);
-        // }
+
         return $finalResult;
     }
 
-    // TODO: If previous post doesn't exist return an error string instead of causing application Error
     public function getNextPostByID() {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
@@ -285,7 +283,6 @@ class PostAPI {
         return $finalResult;
     }
 
-    // FIXME: Getting called 5 times on initial page load (view count is increasing by 5 when called from app)
     public function getPostMetaData($posts) {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);

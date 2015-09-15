@@ -50,7 +50,6 @@ $app->group('/post', function() use ($app, $PostHandler, $RequestHandler, $AuthH
     $app->post('/', function() use ($app, $PostHandler, $RequestHandler, $AuthHandler) {
         $AuthHandler->authorizeToken();
         $data = $PostHandler->getPostByType();
-        //$data = $PostHandler->getPostByID();
         $data = $PostHandler->getPostMetaData($data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
