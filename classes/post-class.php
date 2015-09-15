@@ -44,7 +44,7 @@ class PostAPI {
         }
         return $links;
     }
-
+    // Function not in use, takes too long to execute.
     function remoteFileExists($url) {
         $curl = curl_init($url);
 
@@ -152,7 +152,6 @@ class PostAPI {
     public function getPostByID() {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
-
         $post_id = $data['post_id'];
 
         $mysqli = dbConnect();
@@ -312,6 +311,7 @@ class PostAPI {
                         if ($newresult = $mysqli->query($sql)) {
                             while ($row = $newresult->fetch_object()) {
                                 $path_parts = pathinfo($row->guid);
+                                $post->thumbnail = $path_parts['dirname'] . '/' . $path_parts['filename'] .'.'. $path_parts['extension'];
                                 $post->thumbnailURI = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-300x160.' . $path_parts['extension'];
                                 $post->thumbnailURI70 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-70x70.' . $path_parts['extension'];
                                 $post->thumbnailURI150 = $path_parts['dirname'] . '/' . $path_parts['filename'] . '-150x150.' . $path_parts['extension'];
@@ -324,6 +324,30 @@ class PostAPI {
                     }
                 }
             }
+
+            $sql = "SELECT * FROM ".TABLE_PREFIX."postmeta
+                    WHERE post_id = $post->ID
+                    AND meta_key = 'wpcf-first-name'";
+            //detect if post type is an obit
+            if ($result = $mysqli->query($sql)) {
+                //if post type is obit, pull all meta data for that post_type
+                $sql = "SELECT * FROM ".TABLE_PREFIX."postmeta
+                WHERE post_id = $post->ID";
+                $result = $mysqli->query($sql);
+                foreach ($result as $obj) {
+                    // for each meta key add to the object output
+                    $lable  = str_replace('-', "_", $obj['meta_key']);
+                    if ($lable == 'wpcf_deathdate') {
+                        $newDatetime = date('F j, Y', (int)$obj['meta_value']);
+                        //$newDatetime = $newDatetime->format('F j, Y, g:i a');
+                        $post->$lable = $newDatetime;
+                    } else {
+                        $post->$lable = $obj['meta_value'];
+                    }
+                } // end for each loop
+            } // ends if
+
+
             //Appends the real name of the author to each post object
             $sql = "SELECT `display_name`FROM `".TABLE_PREFIX."users` WHERE `ID` = $post->post_author";
             if ($result = $mysqli->query($sql)) {
@@ -335,6 +359,10 @@ class PostAPI {
                 $post->thumbnailURI = DEFAULT_POST_IMAGE;
                 $post->thumbnailURI70 = DEFAULT_POST_IMAGE70;
                 $post->thumbnailURI150 = DEFAULT_POST_IMAGE150;
+            }
+            if (!isset($post->thumbnail)) {
+                // TODO: Need a default image for obits
+                //$post->thumbnail = DEFAULT_POST_IMAGE;
             }
             if ($category_id != 0) {
                 $sql = "SELECT term_taxonomy_id FROM `".TABLE_PREFIX."term_relationships` WHERE `object_id` = $post->ID";

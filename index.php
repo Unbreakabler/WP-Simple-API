@@ -11,6 +11,7 @@ require_once('classes/comment-class.php');
 require_once('classes/user-class.php');
 require_once('classes/search-class.php');
 require_once('classes/auth-class.php');
+require_once('classes/obits-class.php');
 require_once('../ezadmin/wp-load.php');
 
 $UserHandler = new UserAPI();
@@ -19,6 +20,7 @@ $CommentHandler = new CommentAPI();
 $RequestHandler = new requestSender();
 $SearchHandler = new SearchAPI();
 $AuthHandler = new AuthAPI();
+$ObitsHandler = new ObitsAPI();
 
 //Creates a new mysqli connection to database
 function dbConnect($host = DB_HOST, $user = DB_USER, $password = DB_PASSWORD, $dbname = DB_NAME) {
@@ -137,6 +139,17 @@ $app->group('/search', function() use ($app, $SearchHandler, $RequestHandler, $A
         $data = $SearchHandler->getSearchRecordCount($data);
         $RequestHandler->sendJSONResponse($app, $data);
     });
+});
+
+$app->group('/obits', function() use ($app, $ObitsHandler, $PostHandler, $RequestHandler, $AuthHandler) {
+
+    $app->post('/', function() use ($app, $ObitsHandler, $PostHandler, $RequestHandler, $AuthHandler) {
+        $AuthHandler->authorizeToken();
+        $data = $ObitsHandler->getPostByType();
+        $data = $PostHandler->getPostMetaData($data);
+        $RequestHandler->sendJSONResponse($app, $data);
+    });
+
 });
 
 $app->run();

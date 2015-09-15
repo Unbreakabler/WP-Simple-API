@@ -1,5 +1,4 @@
 <?php
-
 class SearchAPI {
     public function searchPosts() {
         $json = file_get_contents('php://input');
@@ -9,6 +8,8 @@ class SearchAPI {
         $count = (isset($data['count']) ? $data['count'] : 10);
         $index = (isset($data['index']) ? $data['index'] : 0);
 
+        $new_string = $this->cleanSearchString($searchKey);
+
         $mysqli = dbConnect();
         $indexDate = $this->setIndexDate($index, $mysqli);
 
@@ -16,7 +17,8 @@ class SearchAPI {
         FROM ".TABLE_PREFIX."posts
         WHERE post_status = 'publish'
         AND ".TABLE_PREFIX."posts.post_date < '$indexDate'
-        AND post_title LIKE '%". $searchKey . "%'
+        AND post_title LIKE '". $new_string . "'
+        AND post_type = 'post'
         ORDER BY ".TABLE_PREFIX."posts.post_date
         DESC LIMIT 0, $count";
 
@@ -45,11 +47,14 @@ class SearchAPI {
         $index = (isset($data['index']) ? $data['index'] : 0);
 
         $indexDate = $this->setIndexDate($index, $mysqli);
+        $new_string = $this->cleanSearchString($searchKey);
+
         $sql = "SELECT count(*) as count
         FROM ".TABLE_PREFIX."posts
         WHERE post_status = 'publish'
         AND ".TABLE_PREFIX."posts.post_date < '$indexDate'
-        AND post_title LIKE '%". $searchKey . "%'";
+        AND post_title LIKE '". $new_string . "'
+        AND post_type = 'post'";
 
         $result = $mysqli->query($sql);
 
@@ -81,6 +86,73 @@ class SearchAPI {
             }
         }
         return $resultField ;
+    }
+
+    private function cleanSearchString($search_string) {
+
+        // Strip HTML Tags
+        $clear = strip_tags($search_string);
+        // Clean up things like &amp;
+        $clear = html_entity_decode($clear);
+        // Replace single quote with Double Single Quote
+        $clear = str_replace("'", "''", $clear);
+        // Strip out any url-encoded stuff
+        $clear = urldecode($clear);
+
+        $remove_words = array(
+                            "kamloops",
+                            " of ",
+                            " a ",
+                            " in ",
+                            " it ",
+                            " is ",
+                            " the ",
+                            " for ",
+                            " he ",
+                            " she ",
+                            " him ",
+                            " her ",
+                            " on ",
+                            " be ",
+                            " to ",
+                            " had ",
+                            " has ",
+                            " and ",
+                            " or ",
+                            " if ",
+                            " have ",
+                            " all ",
+                            " its ",
+                            " an ",
+                            " but ",
+                            " into ",
+                            " no ",
+                            " not ",
+                            " such ",
+                            " that ",
+                            " their ",
+                            " then ",
+                            " there ",
+                            " these ",
+                            " they ",
+                            " this ",
+                            " was ",
+                            " will ",
+                            " with "
+        );
+        // Replace non-AlNum characters with space
+        $clear = str_replace($remove_words, ' ', $clear);
+        //$clear = preg_replace('/[^A-Za-z0-9]/', ' ', $clear);
+        // Replace Multiple spaces with single space
+        $clear = preg_replace('/ +/', ' ', $clear);
+        // Trim the string of leading/trailing space
+        $clear = trim($clear);
+
+        $new_string = "%".$clear."%";
+
+        $new_string = str_replace(" ", "% %", $new_string);
+
+        return $new_string;
     }
 }
 ?>
