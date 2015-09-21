@@ -62,7 +62,7 @@ class UserAPI {
         $user->email = $data['email'];
 
         // get_user_by login and email, if they exists do not allow the account to be created.
-        $creation = $this->createNewUser($mysqli, TABLE_PREFIX, $user, null);
+        $creation = $this->createNewUser($mysqli, $user, null);
         unset($user->pass);
         if (!$creation) {
             $user = get_user_by('email', $user->email);
