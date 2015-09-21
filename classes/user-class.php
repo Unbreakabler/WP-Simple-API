@@ -16,6 +16,7 @@ class UserAPI {
         $username = $data['username'];
         $res = new stdClass();
         $user = get_user_by( 'login', $username);
+        // @$res->data->error->user = $user;
         // If the username doesn't work, check to make sure they didn't try to login with their email instead of username
         if (!$user) {
             $user = get_user_by('email', $username);
@@ -120,7 +121,7 @@ class UserAPI {
 
         $mysqli->query($sql);
 
-        $NEWUSERID = $mysqli->insert_id;
+        $NEWUSERID = mysql_insert_id();
 
         $capabilities = TABLE_PREFIX.'capabilities';
         $user_level = TABLE_PREFIX.'user_level';
