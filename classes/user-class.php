@@ -121,7 +121,7 @@ class UserAPI {
 
         $mysqli->query($sql);
 
-        $NEWUSERID = mysql_insert_id($mysqli);
+        $NEWUSERID = $mysqli->insert_id;
         return $NEWUSERID;
 
         $capabilities = TABLE_PREFIX.'capabilities';
