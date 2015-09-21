@@ -179,7 +179,7 @@ class UserAPI {
 
             } else {
                 // if email doesn't match an existing account, create new account
-                $newUser = $this->createNewUser($mysqli, TABLE_PREFIX, $user, $service_db_id);
+                $newUser = $this->createNewUser($mysqli, $user, $service_db_id);
                 if ($newUser) {
                     return $newUser;
                 }
