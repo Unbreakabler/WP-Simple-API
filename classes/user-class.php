@@ -121,8 +121,7 @@ class UserAPI {
 
         $mysqli->query($sql);
 
-        $NEWUSERID = $mysqli->insert_id;
-        return $NEWUSERID;
+        $NEWUSERID = intval($mysqli->insert_id);
 
         $capabilities = TABLE_PREFIX.'capabilities';
         $user_level = TABLE_PREFIX.'user_level';
