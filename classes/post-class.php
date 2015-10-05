@@ -326,27 +326,27 @@ class PostAPI {
             }
 
             // I don't want to include 300 empty fields on each post, sending way more information between server and client then required with this approach.
-            // $sql = "SELECT * FROM ".TABLE_PREFIX."postmeta
-            //         WHERE post_id = $post->ID
-            //         AND meta_key = 'wpcf-first-name'";
-            // //detect if post type is an obit
-            // if ($result = $mysqli->query($sql)) {
-            //     //if post type is obit, pull all meta data for that post_type
-            //     $sql = "SELECT * FROM ".TABLE_PREFIX."postmeta
-            //     WHERE post_id = $post->ID";
-            //     $result = $mysqli->query($sql);
-            //     foreach ($result as $obj) {
-            //         // for each meta key add to the object output
-            //         $lable  = str_replace('-', "_", $obj['meta_key']);
-            //         if ($lable == 'wpcf_deathdate') {
-            //             $newDatetime = date('F j, Y', (int)$obj['meta_value']);
-            //             //$newDatetime = $newDatetime->format('F j, Y, g:i a');
-            //             $post->$lable = $newDatetime;
-            //         } else {
-            //             $post->$lable = $obj['meta_value'];
-            //         }
-            //     } // end for each loop
-            // } // ends if
+            $sql = "SELECT * FROM ".TABLE_PREFIX."postmeta
+                    WHERE post_id = $post->ID
+                    AND meta_key = 'wpcf-first-name'";
+            //detect if post type is an obit
+            if ($result = $mysqli->query($sql)) {
+                //if post type is obit, pull all meta data for that post_type
+                $sql = "SELECT * FROM ".TABLE_PREFIX."postmeta
+                WHERE post_id = $post->ID";
+                $result = $mysqli->query($sql);
+                foreach ($result as $obj) {
+                    // for each meta key add to the object output
+                    $lable  = str_replace('-', "_", $obj['meta_key']);
+                    if ($lable == 'wpcf_deathdate') {
+                        $newDatetime = date('F j, Y', (int)$obj['meta_value']);
+                        //$newDatetime = $newDatetime->format('F j, Y, g:i a');
+                        $post->$lable = $newDatetime;
+                    } else {
+                        $post->$lable = $obj['meta_value'];
+                    }
+                } // end for each loop
+            } // ends if
 
 
             //Appends the real name of the author to each post object
