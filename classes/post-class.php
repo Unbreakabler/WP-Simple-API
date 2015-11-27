@@ -177,7 +177,7 @@ class PostAPI {
         $mysqli = dbConnect();
 
         //TODO: Change the 700 days to 3-4 days before pushing live
-        $indexDate = date('Y-m-d H:i:s', strtotime('-4 days'));
+        $indexDate = date('Y-m-d H:i:s', strtotime('-400 days'));
 
         $sql = "SELECT *
                 FROM ".TABLE_PREFIX."posts
@@ -371,10 +371,15 @@ class PostAPI {
                     while ($row = $result->fetch_object()) {
                         if (($row->term_taxonomy_id != $category_id) && ($row->term_taxonomy_id != FEATURED_TERM_ID)) {
                             $post->categories[] = $row->term_taxonomy_id;
+                        } else {
+                            $post->default_category = $row->term_taxonomy_id;
                         }
                     }
                 }
-
+                if (!isset($post->categories)) {
+                    $post->categories[] = $post->default_category;
+                    unset($post->default_category);
+                }
                 $catString = '';
                 if (isset($post->categories)) {
                     foreach ($post->categories as $cat) {
@@ -383,7 +388,7 @@ class PostAPI {
                     $catString = rtrim($catString, ",");
 
                     $sql = "SELECT term_id FROM `".TABLE_PREFIX."term_taxonomy` WHERE `term_taxonomy_id` IN ($catString)";
-                    //echo $sql;
+
                     if ($result = $mysqli->query($sql)) {
                         while ($row = $result->fetch_object()) {
                             $post->terms[] = $row->term_id;

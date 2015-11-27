@@ -1,11 +1,9 @@
 <?php
 
 /** MySQL database name **/
-
-define('DB_NAME', 'kamloops_wp');
-
 define('SITE_URL', 'http://www.kamloopsthisweek.com');
 
+define('DB_NAME', 'kamloops_wp');
 /** MySQL database username */
 define('DB_USER', 'root');
 
