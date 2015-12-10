@@ -177,7 +177,7 @@ class PostAPI {
         $mysqli = dbConnect();
 
         //TODO: Change the 700 days to 3-4 days before pushing live
-        $indexDate = date('Y-m-d H:i:s', strtotime('-400 days'));
+        $indexDate = date('Y-m-d H:i:s', strtotime('-4 days'));
 
         $sql = "SELECT *
                 FROM ".TABLE_PREFIX."posts
